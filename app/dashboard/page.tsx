@@ -82,7 +82,9 @@ export default function DashboardPage() {
   const [loadingAppts, setLoadingAppts] = useState(false)
   const [apptDialogOpen, setApptDialogOpen] = useState(false)
   const [selectedAppt, setSelectedAppt] = useState<Appointment | null>(null)
-  const [apptFilter, setApptFilter] = useState<'all' | 'scheduled' | 'today'>('today')
+  const [apptFilter, setApptFilter] = useState<'all' | 'scheduled' | 'today'>('all')
+  const [apptSearch, setApptSearch] = useState('')
+  const [apptDateFilter, setApptDateFilter] = useState('')
 
   // Settings (doctor only) — no `clinic` object needed; we only use the form
   const [clinicForm, setClinicForm] = useState({ name: '', specialty: '', city: '', phone: '', email: '', address: '' })
@@ -196,13 +198,24 @@ export default function DashboardPage() {
 
   const today = new Date().toISOString().split('T')[0]
   const filteredAppts = appointments.filter(a => {
-    if (apptFilter === 'today') return a.appointment_date === today
-    if (apptFilter === 'scheduled') return a.status === 'scheduled'
+    // Status filter
+    if (apptFilter === 'today' && a.appointment_date !== today) return false
+    if (apptFilter === 'scheduled' && a.status !== 'scheduled') return false
+    // Date filter
+    if (apptDateFilter && a.appointment_date !== apptDateFilter) return false
+    // Search filter
+    if (apptSearch) {
+      const q = apptSearch.toLowerCase()
+      const matchName = a.patient_name?.toLowerCase().includes(q)
+      const matchReason = a.reason?.toLowerCase().includes(q)
+      if (!matchName && !matchReason) return false
+    }
     return true
   })
 
   const todayCount = appointments.filter(a => a.appointment_date === today).length
   const scheduledCount = appointments.filter(a => a.status === 'scheduled').length
+  const completedCount = appointments.filter(a => a.status === 'completed').length
 
   // ── Actions ──
   const deactivatePatient = async (id: string) => {
@@ -213,6 +226,11 @@ export default function DashboardPage() {
   const deleteAppointment = async (id: string) => {
     await supabase.from('appointments').update({ status: 'cancelled' }).eq('id', id)
     setAppointments(prev => prev.map(a => a.id === id ? { ...a, status: 'cancelled' } : a))
+  }
+
+  const updateAppointmentStatus = async (id: string, status: 'completed' | 'no_show' | 'scheduled') => {
+    await supabase.from('appointments').update({ status }).eq('id', id)
+    setAppointments(prev => prev.map(a => a.id === id ? { ...a, status } : a))
   }
 
   const saveClinic = async () => {
@@ -416,22 +434,64 @@ export default function DashboardPage() {
           {/* ══ APPOINTMENTS TAB ═══════════════════════════════════════════════ */}
           {activeTab === 'appointments' && (
             <div>
+              {/* Stats Row */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+                <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm text-center">
+                  <p className="text-2xl font-bold text-gray-900">{appointments.length}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">Total</p>
+                </div>
+                <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm text-center">
+                  <p className="text-2xl font-bold text-teal-600">{todayCount}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">{t.todayAppointments}</p>
+                </div>
+                <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm text-center">
+                  <p className="text-2xl font-bold text-blue-600">{scheduledCount}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">{t.statusScheduled}</p>
+                </div>
+                <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm text-center">
+                  <p className="text-2xl font-bold text-green-600">{completedCount}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">{t.statusCompleted}</p>
+                </div>
+              </div>
+
               {/* Toolbar */}
-              <div className={`flex flex-col sm:flex-row gap-3 mb-4 items-start sm:items-center justify-between ${isRTL ? 'sm:flex-row-reverse' : ''}`}>
-                <h2 className="text-lg font-bold text-gray-900">{t.appointments}</h2>
-                <div className={`flex gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                  {/* Filter pills */}
-                  {(['today', 'scheduled', 'all'] as const).map(f => (
-                    <button key={f} onClick={() => setApptFilter(f)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors ${apptFilter === f ? 'bg-teal-600 text-white' : 'bg-white text-gray-500 border border-gray-200 hover:bg-gray-50'}`}>
-                      {f === 'today' ? t.todayAppointments : f === 'scheduled' ? t.statusScheduled : 'All'}
+              <div className={`flex flex-col gap-3 mb-4 ${isRTL ? 'items-end' : 'items-start'}`}>
+                <div className={`flex flex-col sm:flex-row gap-3 w-full items-start sm:items-center justify-between ${isRTL ? 'sm:flex-row-reverse' : ''}`}>
+                  <h2 className="text-lg font-bold text-gray-900">{t.appointments}</h2>
+                  <div className={`flex flex-wrap gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                    {(['all', 'today', 'scheduled'] as const).map(f => (
+                      <button key={f} onClick={() => setApptFilter(f)}
+                        className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all active:scale-95 ${apptFilter === f ? 'bg-teal-600 text-white shadow-sm shadow-teal-500/20' : 'bg-white text-gray-500 border border-gray-200 hover:bg-gray-50'}`}>
+                        {f === 'today' ? t.todayAppointments : f === 'scheduled' ? t.statusScheduled : 'All'}
+                      </button>
+                    ))}
+                    <button onClick={() => { setSelectedAppt(null); setApptDialogOpen(true) }}
+                      className={`flex items-center gap-1.5 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-xl text-sm transition-all shadow-sm shadow-teal-500/20 active:scale-95 hover:-translate-y-0.5 whitespace-nowrap ${isRTL ? 'flex-row-reverse' : ''}`}>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                      {t.addAppointment}
                     </button>
-                  ))}
-                  <button onClick={() => { setSelectedAppt(null); setApptDialogOpen(true) }}
-                    className={`flex items-center gap-1.5 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-xl text-sm transition-colors shadow-sm whitespace-nowrap ${isRTL ? 'flex-row-reverse' : ''}`}>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-                    {t.addAppointment}
-                  </button>
+                  </div>
+                </div>
+                {/* Search + Date Filter */}
+                <div className={`flex flex-col sm:flex-row gap-2 w-full ${isRTL ? 'sm:flex-row-reverse' : ''}`}>
+                  <div className="relative flex-1 sm:max-w-xs">
+                    <input type="text" value={apptSearch} onChange={e => setApptSearch(e.target.value)}
+                      placeholder={t.searchPlaceholder}
+                      className={`w-full px-4 py-2.5 ${isRTL ? 'pr-10 text-right' : 'pl-10'} rounded-xl border border-gray-200 bg-white text-sm outline-none focus:ring-2 focus:ring-teal-500 transition-all shadow-sm`}
+                    />
+                    <span className={`absolute top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none ${isRTL ? 'right-3' : 'left-3'}`}>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                    </span>
+                  </div>
+                  <input type="date" value={apptDateFilter} onChange={e => setApptDateFilter(e.target.value)}
+                    className="px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm outline-none focus:ring-2 focus:ring-teal-500 transition-all shadow-sm w-full sm:w-auto"
+                  />
+                  {(apptSearch || apptDateFilter) && (
+                    <button onClick={() => { setApptSearch(''); setApptDateFilter('') }}
+                      className="px-3 py-2 text-xs font-semibold text-gray-500 hover:text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors">
+                      ✕ Clear
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -440,7 +500,11 @@ export default function DashboardPage() {
                   <div className="w-14 h-14 bg-teal-50 rounded-full flex items-center justify-center mb-3">
                     <svg className="w-7 h-7 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                   </div>
-                  <p className="text-gray-400 text-sm">{t.noAppointments}</p>
+                  <p className="text-gray-400 text-sm mb-3">{t.noAppointments}</p>
+                  <button onClick={() => { setSelectedAppt(null); setApptDialogOpen(true) }}
+                    className="text-teal-600 hover:text-teal-700 text-sm font-semibold transition-colors">
+                    + {t.addAppointment}
+                  </button>
                 </div>
               ) : (
                 <>
@@ -467,12 +531,18 @@ export default function DashboardPage() {
                               </span>
                             </td>
                             <td className="px-5 py-3.5">
-                              <div className={`flex gap-1.5 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                              <div className={`flex gap-1.5 flex-wrap ${isRTL ? 'flex-row-reverse' : ''}`}>
                                 <button onClick={() => { setSelectedAppt(a); setApptDialogOpen(true) }}
                                   className="px-3 py-1.5 bg-teal-50 hover:bg-teal-100 text-teal-700 rounded-lg text-xs font-semibold transition-colors">{t.edit}</button>
                                 {a.status === 'scheduled' && (
-                                  <button onClick={() => deleteAppointment(a.id)}
-                                    className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-xs font-semibold transition-colors">{t.statusCancelled}</button>
+                                  <>
+                                    <button onClick={() => updateAppointmentStatus(a.id, 'completed')}
+                                      className="px-3 py-1.5 bg-green-50 hover:bg-green-100 text-green-700 rounded-lg text-xs font-semibold transition-colors">✓ {t.statusCompleted}</button>
+                                    <button onClick={() => updateAppointmentStatus(a.id, 'no_show')}
+                                      className="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-lg text-xs font-semibold transition-colors">{t.statusNoShow}</button>
+                                    <button onClick={() => deleteAppointment(a.id)}
+                                      className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-xs font-semibold transition-colors">{t.statusCancelled}</button>
+                                  </>
                                 )}
                               </div>
                             </td>
@@ -496,10 +566,14 @@ export default function DashboardPage() {
                             {statusLabels[a.status] ?? a.status}
                           </span>
                         </div>
-                        <div className={`flex gap-2 mt-3 pt-3 border-t border-gray-50 justify-end ${isRTL ? 'flex-row-reverse justify-start' : ''}`}>
+                        <div className={`flex gap-2 flex-wrap mt-3 pt-3 border-t border-gray-50 justify-end ${isRTL ? 'flex-row-reverse justify-start' : ''}`}>
                           <button onClick={() => { setSelectedAppt(a); setApptDialogOpen(true) }} className="px-3 py-1.5 bg-teal-50 text-teal-700 rounded-lg text-xs font-semibold">{t.edit}</button>
                           {a.status === 'scheduled' && (
-                            <button onClick={() => deleteAppointment(a.id)} className="px-3 py-1.5 bg-red-50 text-red-600 rounded-lg text-xs font-semibold">{t.statusCancelled}</button>
+                            <>
+                              <button onClick={() => updateAppointmentStatus(a.id, 'completed')} className="px-3 py-1.5 bg-green-50 text-green-700 rounded-lg text-xs font-semibold">✓</button>
+                              <button onClick={() => updateAppointmentStatus(a.id, 'no_show')} className="px-3 py-1.5 bg-amber-50 text-amber-700 rounded-lg text-xs font-semibold">{t.statusNoShow}</button>
+                              <button onClick={() => deleteAppointment(a.id)} className="px-3 py-1.5 bg-red-50 text-red-600 rounded-lg text-xs font-semibold">{t.statusCancelled}</button>
+                            </>
                           )}
                         </div>
                       </div>
@@ -534,7 +608,7 @@ export default function DashboardPage() {
                     <div><label className={lc}>{t.clinicAddress}</label><input type="text" value={clinicForm.address} onChange={e => { setClinicForm({...clinicForm, address: e.target.value}); setClinicSuccess(false) }} className={ic} /></div>
                   </div>
                   <button onClick={saveClinic} disabled={clinicLoading}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold rounded-xl text-sm transition-colors">
+                    className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold rounded-xl text-sm transition-all active:scale-95 hover:-translate-y-0.5 shadow-sm shadow-blue-500/20">
                     {clinicLoading ? <><svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>{t.saving}</> : t.saveChanges}
                   </button>
                 </div>
@@ -586,7 +660,7 @@ export default function DashboardPage() {
                     </div>
                     <div><label className={lc}>{t.secretaryPassword} *</label><input type="password" value={secForm.password} onChange={e => { setSecForm({...secForm, password: e.target.value}); setSecError(''); setSecSuccess(false) }} className={ic} placeholder="••••••••" /></div>
                     <button onClick={addSecretary} disabled={secLoading}
-                      className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold rounded-xl text-sm transition-colors">
+                      className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold rounded-xl text-sm transition-all active:scale-95 hover:-translate-y-0.5 shadow-sm shadow-blue-500/20">
                       {secLoading ? <><svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>{t.saving}</> : <><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>{t.addSecretary}</>}
                     </button>
                   </div>
