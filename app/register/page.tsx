@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase'
 import { useT } from '@/lib/i18n'
 import LanguageSwitcher from '@/components/LanguageSwitcher'
 import LoadingScreen from '@/components/LoadingScreen'
+import Logo from '@/components/Logo'
 
 interface DoctorForm {
   full_name: string
@@ -179,13 +180,8 @@ export default function RegisterPage() {
       {/* Header */}
       <header className="border-b border-gray-100">
         <div className={`max-w-2xl mx-auto px-4 h-14 flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
-          <Link href="/" className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-            <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center">
-              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5}
-                  d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-              </svg>
-            </div>
+          <Link href="/" className={`flex items-center gap-2.5 ${isRTL ? 'flex-row-reverse' : ''}`}>
+            <Logo className="w-8 h-8" />
             <span className="font-bold text-gray-900 text-sm">{t.appName}</span>
           </Link>
           <LanguageSwitcher />

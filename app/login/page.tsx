@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase'
 import { useT } from '@/lib/i18n'
 import LanguageSwitcher from '@/components/LanguageSwitcher'
 import LoadingScreen from '@/components/LoadingScreen'
+import Logo from '@/components/Logo'
 import { AuthUser } from '@/types'
 
 export default function LoginPage() {
@@ -90,13 +91,8 @@ export default function LoginPage() {
       {/* Header */}
       <header className="border-b border-gray-100">
         <div className={`max-w-5xl mx-auto px-4 h-14 flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
-          <Link href="/" className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-            <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center">
-              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5}
-                  d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-              </svg>
-            </div>
+          <Link href="/" className={`flex items-center gap-2.5 ${isRTL ? 'flex-row-reverse' : ''}`}>
+            <Logo className="w-8 h-8" />
             <span className="font-bold text-gray-900 text-sm">{t.appName}</span>
           </Link>
           <LanguageSwitcher />
@@ -109,12 +105,7 @@ export default function LoginPage() {
 
           {/* Icon + Title */}
           <div className="text-center mb-8">
-            <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-md">
-              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
-            </div>
+            <Logo className="w-16 h-16 mx-auto mb-4 shadow-md rounded-2xl" />
             <h1 className="text-2xl font-extrabold text-gray-900">{t.loginTitle}</h1>
             <p className="text-gray-500 text-sm mt-1">{t.loginSubtitle}</p>
           </div>

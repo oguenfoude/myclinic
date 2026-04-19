@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useT } from '@/lib/i18n'
 import LanguageSwitcher from '@/components/LanguageSwitcher'
+import Logo from '@/components/Logo'
 
 export default function LandingPage() {
   const { t, isRTL } = useT()
@@ -70,12 +71,7 @@ export default function LandingPage() {
 
             {/* Logo */}
             <div className={`flex items-center gap-2.5 ${isRTL ? 'flex-row-reverse' : ''}`}>
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                <svg className="w-4.5 h-4.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5}
-                    d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                </svg>
-              </div>
+              <Logo className="w-9 h-9" />
               <span className="font-bold text-gray-900">{t.appName}</span>
             </div>
 

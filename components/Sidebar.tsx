@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useT } from '@/lib/i18n'
 import { AuthUser } from '@/types'
+import Logo from '@/components/Logo'
 
 type Tab = 'patients' | 'appointments' | 'settings'
 
@@ -96,12 +97,7 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
       >
         {/* Brand */}
         <div className={`flex items-center gap-2.5 px-5 py-5 border-b border-gray-50 ${isRTL ? 'flex-row-reverse' : ''}`}>
-          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
-            <svg className="w-4.5 h-4.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-            </svg>
-          </div>
+          <Logo className="w-8 h-8 flex-shrink-0" />
           <div className={isRTL ? 'text-right' : ''}>
             <p className="font-bold text-gray-900 text-sm leading-none">{t.appName}</p>
             <p className="text-xs text-gray-400 mt-0.5">{t.appTagline}</p>
