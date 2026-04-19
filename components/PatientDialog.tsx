@@ -124,7 +124,7 @@ export default function PatientDialog({ patient, onClose, onSave, authUser }: Pa
 
       {/* Dialog */}
       <div
-        className={`relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto ${isRTL ? 'text-right' : ''}`}
+        className={`relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-y-auto ${isRTL ? 'text-right' : ''}`}
         dir={isRTL ? 'rtl' : 'ltr'}
       >
         {/* Header */}
@@ -285,7 +285,7 @@ export default function PatientDialog({ patient, onClose, onSave, authUser }: Pa
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold rounded-xl transition-colors duration-200 text-sm"
+              className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold rounded-xl transition-all duration-200 active:scale-95 hover:-translate-y-0.5 shadow-sm shadow-blue-500/20 text-sm"
             >
               {loading ? (
                 <>
@@ -302,7 +302,7 @@ export default function PatientDialog({ patient, onClose, onSave, authUser }: Pa
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-colors duration-200 text-sm"
+              className="flex-1 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-all active:scale-95 text-sm"
             >
               {t.cancel}
             </button>

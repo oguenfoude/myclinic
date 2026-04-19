@@ -246,10 +246,16 @@ export default function DashboardPage() {
     setSecretaries(prev => prev.map(s => s.id === id ? { ...s, is_active: false } : s))
   }
 
+  const handleLogout = async () => {
+    localStorage.removeItem('clinic_user')
+    await supabase.auth.signOut()
+    router.replace('/login')
+  }
+
   // Show branded loading screen while checking auth or redirecting
   if (!isMounted || !authUser) return <LoadingScreen />
 
-  const ic = `w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 ${isRTL ? 'text-right' : ''}`
+  const ic = `w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 shadow-sm shadow-black/5 ${isRTL ? 'text-right' : ''}`
   const lc = `block text-sm font-medium text-gray-700 mb-1 ${isRTL ? 'text-right' : ''}`
 
   const statusLabels: Record<string, string> = {
@@ -269,7 +275,18 @@ export default function DashboardPage() {
               <p className="text-sm font-bold text-gray-900">{t.welcome}, <span className="text-blue-600">{authUser.full_name}</span></p>
               <p className="text-xs text-gray-400 capitalize">{authUser.role}</p>
             </div>
-            <LanguageSwitcher />
+            <div className={`flex items-center gap-1 sm:gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+              <LanguageSwitcher />
+              <button 
+                onClick={handleLogout} 
+                className="md:hidden p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                title={t.logout}
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+              </button>
+            </div>
           </div>
         </header>
 
@@ -308,7 +325,7 @@ export default function DashboardPage() {
                     </span>
                   </div>
                   <button onClick={() => { setSelectedPatient(null); setPatientDialogOpen(true) }}
-                    className={`flex items-center gap-1.5 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl text-sm transition-colors shadow-sm whitespace-nowrap ${isRTL ? 'flex-row-reverse' : ''}`}>
+                    className={`flex items-center gap-1.5 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl text-sm transition-all shadow-sm shadow-blue-500/20 active:scale-95 hover:-translate-y-0.5 whitespace-nowrap ${isRTL ? 'flex-row-reverse' : ''}`}>
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
                     {t.addPatient}
                   </button>

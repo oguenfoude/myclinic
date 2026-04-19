@@ -160,7 +160,7 @@ export default function RegisterPage() {
   }
 
   const inputClass = (hasError?: boolean) =>
-    `w-full px-4 py-3 rounded-xl border text-sm transition-all duration-200 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+    `w-full px-4 py-3 rounded-xl border text-sm transition-all duration-200 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm focus:shadow-md ${
       hasError ? 'border-red-400 bg-red-50' : 'border-gray-200 bg-gray-50 focus:bg-white'
     } ${isRTL ? 'text-right' : ''}`
 
@@ -369,7 +369,7 @@ export default function RegisterPage() {
             {step > 1 && (
               <button
                 onClick={handleBack}
-                className="flex-1 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-colors duration-200 text-sm"
+                className="flex-1 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-all active:scale-95 text-sm"
               >
                 {t.back}
               </button>
@@ -377,7 +377,7 @@ export default function RegisterPage() {
             {step < 3 ? (
               <button
                 onClick={handleNext}
-                className="flex-1 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors duration-200 text-sm"
+                className="flex-1 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-all duration-200 active:scale-95 hover:-translate-y-0.5 shadow-sm shadow-blue-500/20 text-sm"
               >
                 {t.next}
               </button>
@@ -385,7 +385,7 @@ export default function RegisterPage() {
               <button
                 onClick={handleSubmit}
                 disabled={loading}
-                className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold rounded-xl transition-colors duration-200 text-sm"
+                className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold rounded-xl transition-all duration-200 active:scale-95 hover:-translate-y-0.5 shadow-sm shadow-blue-500/20 text-sm"
               >
                 {loading ? (
                   <>

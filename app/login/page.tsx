@@ -136,7 +136,7 @@ export default function LoginPage() {
                     value={username}
                     onChange={(e) => { setUsername(e.target.value); setError('') }}
                     autoComplete="username"
-                    className={`w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${isRTL ? 'text-right pr-4 pl-9' : 'pl-9'}`}
+                    className={`w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm focus:shadow-md ${isRTL ? 'text-right pr-4 pl-9' : 'pl-9'}`}
                     placeholder={t.username}
                   />
                   <span className={`absolute top-1/2 -translate-y-1/2 text-gray-400 ${isRTL ? 'right-3' : 'left-3'}`}>
@@ -160,7 +160,7 @@ export default function LoginPage() {
                     value={password}
                     onChange={(e) => { setPassword(e.target.value); setError('') }}
                     autoComplete="current-password"
-                    className={`w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${isRTL ? 'text-right pr-4 pl-9' : 'pl-9 pr-9'}`}
+                    className={`w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm focus:shadow-md ${isRTL ? 'text-right pr-4 pl-9' : 'pl-9 pr-9'}`}
                     placeholder="••••••••"
                   />
                   <span className={`absolute top-1/2 -translate-y-1/2 text-gray-400 ${isRTL ? 'right-3' : 'left-3'}`}>
@@ -195,7 +195,7 @@ export default function LoginPage() {
                 id="login-submit"
                 type="submit"
                 disabled={loading}
-                className="w-full flex items-center justify-center gap-2 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-bold rounded-xl transition-colors text-sm mt-2"
+                className="w-full flex items-center justify-center gap-2 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-bold rounded-xl transition-all active:scale-95 hover:-translate-y-0.5 shadow-sm shadow-blue-500/20 text-sm mt-2"
               >
                 {loading ? (
                   <>
