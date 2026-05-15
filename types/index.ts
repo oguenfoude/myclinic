@@ -36,27 +36,12 @@ export interface Patient {
   gender: 'male' | 'female' | null
   date_of_birth: string | null
   blood_type: 'A+' | 'A-' | 'B+' | 'B-' | 'AB+' | 'AB-' | 'O+' | 'O-' | null
+  medical_studies: string | null
   address: string | null
   city: string | null
   emergency_phone: string | null
   notes: string | null
   is_active: boolean
-  created_by: string | null
-  created_at: string
-  updated_at: string
-}
-
-export interface Appointment {
-  id: string
-  clinic_id: string
-  patient_id: string
-  patient_name?: string // joined
-  doctor_name?: string | null
-  appointment_date: string   // date YYYY-MM-DD
-  appointment_time: string   // time HH:MM
-  reason: string | null
-  status: 'scheduled' | 'completed' | 'cancelled' | 'no_show'
-  notes: string | null
   created_by: string | null
   created_at: string
   updated_at: string

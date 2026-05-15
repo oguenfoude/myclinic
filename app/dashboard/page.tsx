@@ -4,10 +4,9 @@ import { useState, useEffect, useCallback, startTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { useT } from '@/lib/i18n'
-import { AuthUser, Patient, User, Appointment } from '@/types'
+import { AuthUser, Patient, User } from '@/types'
 import Sidebar from '@/components/Sidebar'
 import PatientDialog from '@/components/PatientDialog'
-import AppointmentDialog from '@/components/AppointmentDialog'
 import LanguageSwitcher from '@/components/LanguageSwitcher'
 import LoadingScreen from '@/components/LoadingScreen'
 
@@ -17,20 +16,6 @@ function fmtDate(d: string | null) {
   if (!d) return '—'
   try { return new Date(d).toLocaleDateString('fr-DZ', { day: '2-digit', month: 'short', year: 'numeric' }) }
   catch { return d }
-}
-
-function fmtTime(t: string | null) {
-  if (!t) return '—'
-  const [h, m] = t.split(':')
-  const hour = parseInt(h, 10)
-  return `${hour % 12 || 12}:${m} ${hour >= 12 ? 'PM' : 'AM'}`
-}
-
-const STATUS_COLORS = {
-  scheduled: 'bg-blue-100 text-blue-700',
-  completed: 'bg-green-100 text-green-700',
-  cancelled: 'bg-gray-100 text-gray-500',
-  no_show: 'bg-red-100 text-red-600',
 }
 
 // ─── Reusable UI ───────────────────────────────────────────────────────────────
@@ -59,7 +44,7 @@ function StatCard({ label, value, icon, color }: { label: string; value: number 
 
 // ─── Main Dashboard ────────────────────────────────────────────────────────────
 
-type Tab = 'patients' | 'appointments' | 'settings'
+type Tab = 'patients' | 'settings'
 
 export default function DashboardPage() {
   const { t, isRTL } = useT()
@@ -73,20 +58,14 @@ export default function DashboardPage() {
   // Patients
   const [patients, setPatients] = useState<Patient[]>([])
   const [patientSearch, setPatientSearch] = useState('')
+  const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'week' | 'month' | 'custom'>('all')
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
   const [loadingPatients, setLoadingPatients] = useState(false)
   const [patientDialogOpen, setPatientDialogOpen] = useState(false)
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null)
 
-  // Appointments
-  const [appointments, setAppointments] = useState<Appointment[]>([])
-  const [loadingAppts, setLoadingAppts] = useState(false)
-  const [apptDialogOpen, setApptDialogOpen] = useState(false)
-  const [selectedAppt, setSelectedAppt] = useState<Appointment | null>(null)
-  const [apptFilter, setApptFilter] = useState<'all' | 'scheduled' | 'today'>('all')
-  const [apptSearch, setApptSearch] = useState('')
-  const [apptDateFilter, setApptDateFilter] = useState('')
-
-  // Settings (doctor only) — no `clinic` object needed; we only use the form
+  // Settings (doctor only)
   const [clinicForm, setClinicForm] = useState({ name: '', specialty: '', city: '', phone: '', email: '', address: '' })
   const [clinicLoading, setClinicLoading] = useState(false)
   const [clinicSuccess, setClinicSuccess] = useState(false)
@@ -106,7 +85,6 @@ export default function DashboardPage() {
         try {
           const u = JSON.parse(stored) as AuthUser
           setAuthUser(u)
-          if (u.role === 'secretary') setActiveTab('appointments')
         } catch {
           localStorage.removeItem('clinic_user')
           router.replace('/login')
@@ -135,39 +113,11 @@ export default function DashboardPage() {
     setLoadingPatients(false)
   }, [authUser])
 
-  // ── Load Appointments ──
-  const loadAppointments = useCallback(async () => {
-    if (!authUser) return
-    setLoadingAppts(true)
-    try {
-      const { data, error } = await supabase
-        .from('appointments')
-        .select('*, patients(full_name)')
-        .eq('clinic_id', authUser.clinic_id)
-        .order('appointment_date', { ascending: true })
-        .order('appointment_time', { ascending: true })
-      // If table doesn't exist yet, ignore silently
-      if (!error && data) {
-        setAppointments(
-          (data as Array<Record<string, unknown>>).map((a) => ({
-            ...(a as unknown as Appointment),
-            patient_name:
-              (a.patients as Record<string, string> | null)?.full_name ?? '—',
-          }))
-        )
-      }
-    } catch {
-      // appointments table may not exist yet — stay empty
-    }
-    setLoadingAppts(false)
-  }, [authUser])
-
   // ── Load Clinic + Secretaries ──
   const loadClinic = useCallback(async () => {
     if (!authUser) return
     const { data } = await supabase.from('clinics').select('*').eq('id', authUser.clinic_id).single()
     if (data) {
-      // No separate `clinic` object needed — populate the form directly
       setClinicForm({ name: data.name ?? '', specialty: data.specialty ?? '', city: data.city ?? '', phone: data.phone ?? '', email: data.email ?? '', address: data.address ?? '' })
     }
   }, [authUser])
@@ -178,12 +128,10 @@ export default function DashboardPage() {
     if (data) setSecretaries(data as User[])
   }, [authUser])
 
-  // startTransition lets React batch these state updates and prevents the
-  // react-hooks/set-state-in-effect lint error about setState inside effect bodies.
   useEffect(() => {
     if (!authUser) return
-    startTransition(() => { loadPatients(); loadAppointments() })
-  }, [authUser, loadPatients, loadAppointments])
+    startTransition(() => { loadPatients() })
+  }, [authUser, loadPatients])
 
   useEffect(() => {
     if (!authUser || activeTab !== 'settings' || authUser.role !== 'doctor') return
@@ -191,46 +139,54 @@ export default function DashboardPage() {
   }, [authUser, activeTab, loadClinic, loadSecretaries])
 
   // ── Derived data ──
-  const filteredPatients = patients.filter(p => {
-    const q = patientSearch.toLowerCase()
-    return p.full_name.toLowerCase().includes(q) || p.phone.includes(q)
-  })
+  const now = new Date()
+  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString()
+  const startOfWeek = (() => {
+    const d = new Date(now); d.setDate(d.getDate() - d.getDay())
+    d.setHours(0, 0, 0, 0); return d.toISOString()
+  })()
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
 
-  const today = new Date().toISOString().split('T')[0]
-  const filteredAppts = appointments.filter(a => {
-    // Status filter
-    if (apptFilter === 'today' && a.appointment_date !== today) return false
-    if (apptFilter === 'scheduled' && a.status !== 'scheduled') return false
+  const todayCount = patients.filter(p => p.created_at >= startOfDay).length
+
+  const filteredPatients = patients.filter(p => {
+    // Text search
+    const q = patientSearch.toLowerCase()
+    const matchesText = p.full_name.toLowerCase().includes(q) || p.phone.includes(q)
+    if (!matchesText) return false
     // Date filter
-    if (apptDateFilter && a.appointment_date !== apptDateFilter) return false
-    // Search filter
-    if (apptSearch) {
-      const q = apptSearch.toLowerCase()
-      const matchName = a.patient_name?.toLowerCase().includes(q)
-      const matchReason = a.reason?.toLowerCase().includes(q)
-      if (!matchName && !matchReason) return false
+    if (dateFilter === 'today') return p.created_at >= startOfDay
+    if (dateFilter === 'week') return p.created_at >= startOfWeek
+    if (dateFilter === 'month') return p.created_at >= startOfMonth
+    if (dateFilter === 'custom') {
+      if (dateFrom && p.created_at < new Date(dateFrom).toISOString()) return false
+      if (dateTo) {
+        const endDate = new Date(dateTo)
+        endDate.setDate(endDate.getDate() + 1)
+        if (p.created_at >= endDate.toISOString()) return false
+      }
+      return true
     }
     return true
   })
 
-  const todayCount = appointments.filter(a => a.appointment_date === today).length
-  const scheduledCount = appointments.filter(a => a.status === 'scheduled').length
-  const completedCount = appointments.filter(a => a.status === 'completed').length
+  const handlePresetFilter = (preset: 'all' | 'today' | 'week' | 'month') => {
+    setDateFilter(preset)
+    setDateFrom('')
+    setDateTo('')
+  }
+
+  const handleDateChange = (from: string, to: string) => {
+    setDateFrom(from)
+    setDateTo(to)
+    if (from || to) setDateFilter('custom')
+    else setDateFilter('all')
+  }
 
   // ── Actions ──
   const deactivatePatient = async (id: string) => {
     await supabase.from('patients').update({ is_active: false }).eq('id', id)
     setPatients(prev => prev.filter(p => p.id !== id))
-  }
-
-  const deleteAppointment = async (id: string) => {
-    await supabase.from('appointments').update({ status: 'cancelled' }).eq('id', id)
-    setAppointments(prev => prev.map(a => a.id === id ? { ...a, status: 'cancelled' } : a))
-  }
-
-  const updateAppointmentStatus = async (id: string, status: 'completed' | 'no_show' | 'scheduled') => {
-    await supabase.from('appointments').update({ status }).eq('id', id)
-    setAppointments(prev => prev.map(a => a.id === id ? { ...a, status } : a))
   }
 
   const saveClinic = async () => {
@@ -276,11 +232,6 @@ export default function DashboardPage() {
   const ic = `w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 shadow-sm shadow-black/5 ${isRTL ? 'text-right' : ''}`
   const lc = `block text-sm font-medium text-gray-700 mb-1 ${isRTL ? 'text-right' : ''}`
 
-  const statusLabels: Record<string, string> = {
-    scheduled: t.statusScheduled, completed: t.statusCompleted,
-    cancelled: t.statusCancelled, no_show: t.statusNoShow,
-  }
-
   return (
     <div className="min-h-screen bg-[#f8fafc]" dir={isRTL ? 'rtl' : 'ltr'}>
       <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
@@ -314,39 +265,96 @@ export default function DashboardPage() {
           {activeTab === 'patients' && (
             <div>
               {/* Stats Row */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
                 <StatCard label={t.totalPatients} value={patients.length}
                   color="bg-blue-50 text-blue-600"
                   icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>}
                 />
-                <StatCard label={t.todayAppointments} value={todayCount}
+                <StatCard label={t.filterToday} value={todayCount}
                   color="bg-teal-50 text-teal-600"
-                  icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>}
-                />
-                <StatCard label={t.pendingAppointments} value={scheduledCount}
-                  color="bg-amber-50 text-amber-600"
                   icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
                 />
               </div>
 
-              {/* Toolbar */}
-              <div className={`flex flex-col sm:flex-row gap-3 mb-4 items-start sm:items-center justify-between ${isRTL ? 'sm:flex-row-reverse' : ''}`}>
-                <h2 className="text-lg font-bold text-gray-900">{t.patients}</h2>
-                <div className={`flex gap-2 w-full sm:w-auto ${isRTL ? 'flex-row-reverse' : ''}`}>
-                  <div className="relative flex-1 sm:w-64">
-                    <input type="text" value={patientSearch} onChange={e => setPatientSearch(e.target.value)}
-                      placeholder={t.searchPlaceholder}
-                      className={`w-full px-4 py-2.5 ${isRTL ? 'pr-10 text-right' : 'pl-10'} rounded-xl border border-gray-200 bg-white text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all`}
-                    />
-                    <span className={`absolute top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none ${isRTL ? 'right-3' : 'left-3'}`}>
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+              {/* Toolbar: Title + Date Filters + Search + Add */}
+              <div className="space-y-3 mb-4">
+                <div className={`flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between ${isRTL ? 'sm:flex-row-reverse' : ''}`}>
+                  <h2 className="text-lg font-bold text-gray-900">{t.patients}</h2>
+                  <div className={`flex gap-2 w-full sm:w-auto ${isRTL ? 'flex-row-reverse' : ''}`}>
+                    <div className="relative flex-1 sm:w-64">
+                      <input type="text" value={patientSearch} onChange={e => setPatientSearch(e.target.value)}
+                        placeholder={t.searchPlaceholder}
+                        className={`w-full px-4 py-2.5 ${isRTL ? 'pr-10 text-right' : 'pl-10'} rounded-xl border border-gray-200 bg-white text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all`}
+                      />
+                      <span className={`absolute top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none ${isRTL ? 'right-3' : 'left-3'}`}>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                      </span>
+                    </div>
+                    <button onClick={() => { setSelectedPatient(null); setPatientDialogOpen(true) }}
+                      className={`flex items-center gap-1.5 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl text-sm transition-all shadow-sm shadow-blue-500/20 active:scale-95 hover:-translate-y-0.5 whitespace-nowrap ${isRTL ? 'flex-row-reverse' : ''}`}>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                      {t.addPatient}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Date Filter Pills + Custom Date Range */}
+                <div className="space-y-2">
+                  <div className={`flex items-center justify-between flex-wrap gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                    <div className={`flex items-center gap-1 bg-gray-100 p-1 rounded-xl ${isRTL ? 'flex-row-reverse' : ''}`}>
+                      {([
+                        { key: 'all' as const, label: t.filterAll },
+                        { key: 'today' as const, label: t.filterToday },
+                        { key: 'week' as const, label: t.filterThisWeek },
+                        { key: 'month' as const, label: t.filterThisMonth },
+                      ]).map(f => (
+                        <button
+                          key={f.key}
+                          onClick={() => handlePresetFilter(f.key)}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 ${
+                            dateFilter === f.key
+                              ? 'bg-white text-blue-600 shadow-sm'
+                              : 'text-gray-500 hover:text-gray-700'
+                          }`}
+                        >
+                          {f.label}
+                        </button>
+                      ))}
+                    </div>
+                    <span className="text-xs text-gray-400 font-medium">
+                      {filteredPatients.length} {t.resultCount}
                     </span>
                   </div>
-                  <button onClick={() => { setSelectedPatient(null); setPatientDialogOpen(true) }}
-                    className={`flex items-center gap-1.5 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl text-sm transition-all shadow-sm shadow-blue-500/20 active:scale-95 hover:-translate-y-0.5 whitespace-nowrap ${isRTL ? 'flex-row-reverse' : ''}`}>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-                    {t.addPatient}
-                  </button>
+
+                  {/* Custom Date Range Picker */}
+                  <div className={`flex items-center gap-2 flex-wrap ${isRTL ? 'flex-row-reverse' : ''}`}>
+                    <div className={`flex items-center gap-1.5 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                      <span className="text-xs text-gray-500 font-semibold whitespace-nowrap">{t.dateFrom}</span>
+                      <input
+                        type="date"
+                        value={dateFrom}
+                        onChange={e => handleDateChange(e.target.value, dateTo)}
+                        className={`px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-xs outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all ${dateFilter === 'custom' && dateFrom ? 'border-blue-300 bg-blue-50/30' : ''}`}
+                      />
+                    </div>
+                    <div className={`flex items-center gap-1.5 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                      <span className="text-xs text-gray-500 font-semibold whitespace-nowrap">{t.dateTo}</span>
+                      <input
+                        type="date"
+                        value={dateTo}
+                        onChange={e => handleDateChange(dateFrom, e.target.value)}
+                        className={`px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-xs outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all ${dateFilter === 'custom' && dateTo ? 'border-blue-300 bg-blue-50/30' : ''}`}
+                      />
+                    </div>
+                    {(dateFrom || dateTo) && (
+                      <button
+                        onClick={() => { handlePresetFilter('all') }}
+                        className="px-2.5 py-1.5 text-xs font-bold text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      >
+                        ✕ {t.clearFilter}
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -360,36 +368,43 @@ export default function DashboardPage() {
               ) : (
                 <>
                   {/* Desktop Table */}
-                  <div className="hidden md:block rounded-2xl border border-gray-100 overflow-hidden bg-white shadow-sm">
+                  <div className="hidden lg:block rounded-2xl border border-gray-100 overflow-hidden bg-white shadow-sm">
                     <table className="w-full text-sm">
                       <thead className="bg-gray-50 border-b border-gray-100">
                         <tr>
-                          {[t.fullName, t.phone, t.gender, t.bloodType, t.createdAt, t.actions].map((col, i) => (
+                          {[t.fullName, t.phone, t.medicalStudies, t.gender, t.createdAt, t.actions].map((col, i) => (
                             <th key={i} className={`px-5 py-3.5 font-semibold text-gray-500 text-xs uppercase tracking-wide ${isRTL ? 'text-right' : 'text-left'}`}>{col}</th>
                           ))}
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-50">
                         {filteredPatients.map(p => (
-                          <tr key={p.id} className="hover:bg-slate-50 transition-colors">
+                          <tr key={p.id} className="hover:bg-slate-50/70 transition-colors group">
                             <td className={`px-5 py-3.5 ${isRTL ? 'text-right' : ''}`}>
                               <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                                  <span className="text-blue-700 font-bold text-xs">{p.full_name.charAt(0).toUpperCase()}</span>
+                                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center flex-shrink-0 shadow-sm">
+                                  <span className="text-white font-bold text-xs">{p.full_name.charAt(0).toUpperCase()}</span>
                                 </div>
-                                <span className="font-medium text-gray-900">{p.full_name}</span>
+                                <div className={isRTL ? 'text-right' : ''}>
+                                  <span className="font-semibold text-gray-900 block">{p.full_name}</span>
+                                  {p.blood_type && (
+                                    <span className="inline-flex px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-50 text-red-500 border border-red-100 mt-0.5">{p.blood_type}</span>
+                                  )}
+                                </div>
                               </div>
                             </td>
-                            <td className="px-5 py-3.5 text-gray-600">{p.phone}</td>
-                            <td className="px-5 py-3.5 text-gray-600">{p.gender ? (p.gender === 'male' ? t.male : t.female) : '—'}</td>
-                            <td className="px-5 py-3.5">
-                              {p.blood_type
-                                ? <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-red-50 text-red-600 border border-red-100">{p.blood_type}</span>
-                                : '—'}
+                            <td className="px-5 py-3.5 text-gray-600 font-mono text-xs">{p.phone}</td>
+                            <td className="px-5 py-3.5 max-w-[280px]">
+                              {p.medical_studies ? (
+                                <span className="text-gray-700 text-xs leading-relaxed line-clamp-2">{p.medical_studies}</span>
+                              ) : (
+                                <span className="text-gray-300 text-xs">—</span>
+                              )}
                             </td>
-                            <td className="px-5 py-3.5 text-gray-500 text-xs">{fmtDate(p.created_at)}</td>
+                            <td className="px-5 py-3.5 text-gray-500 text-xs">{p.gender ? (p.gender === 'male' ? t.male : t.female) : '—'}</td>
+                            <td className="px-5 py-3.5 text-gray-400 text-xs">{fmtDate(p.created_at)}</td>
                             <td className="px-5 py-3.5">
-                              <div className={`flex items-center gap-1.5 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                              <div className={`flex items-center gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity ${isRTL ? 'flex-row-reverse' : ''}`}>
                                 <button onClick={() => { setSelectedPatient(p); setPatientDialogOpen(true) }}
                                   className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-xs font-semibold transition-colors">{t.edit}</button>
                                 <button onClick={() => deactivatePatient(p.id)}
@@ -403,178 +418,37 @@ export default function DashboardPage() {
                   </div>
 
                   {/* Mobile Cards */}
-                  <div className="md:hidden space-y-2">
+                  <div className="lg:hidden space-y-2">
                     {filteredPatients.map(p => (
-                      <div key={p.id} className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
-                        <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
+                      <div key={p.id} className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm hover:shadow-md transition-shadow">
+                        <div className={`flex items-start justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
                           <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                            <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                              <span className="text-blue-700 font-bold text-sm">{p.full_name.charAt(0).toUpperCase()}</span>
+                            <div className="w-11 h-11 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center flex-shrink-0 shadow-sm">
+                              <span className="text-white font-bold text-sm">{p.full_name.charAt(0).toUpperCase()}</span>
                             </div>
                             <div className={isRTL ? 'text-right' : ''}>
-                              <p className="font-semibold text-gray-900 text-sm">{p.full_name}</p>
-                              <p className="text-gray-400 text-xs">{p.phone}</p>
+                              <p className="font-bold text-gray-900 text-sm">{p.full_name}</p>
+                              <p className="text-gray-400 text-xs font-mono">{p.phone}</p>
+                              <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                                {p.blood_type && <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-50 text-red-500 border border-red-100">{p.blood_type}</span>}
+                                {p.gender && <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-100 text-gray-500">{p.gender === 'male' ? t.male : t.female}</span>}
+                              </div>
                             </div>
                           </div>
-                          {p.blood_type && <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-red-50 text-red-600">{p.blood_type}</span>}
+                          <span className="text-[10px] text-gray-400 whitespace-nowrap mt-1">{fmtDate(p.created_at)}</span>
                         </div>
-                        <div className={`flex gap-2 mt-3 pt-3 border-t border-gray-50 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                          <span className="flex-1 text-xs text-gray-400 self-center">{fmtDate(p.created_at)}</span>
-                          <button onClick={() => { setSelectedPatient(p); setPatientDialogOpen(true) }} className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-xs font-semibold">{t.edit}</button>
-                          <button onClick={() => deactivatePatient(p.id)} className="px-3 py-1.5 bg-red-50 text-red-600 rounded-lg text-xs font-semibold">{t.deactivate}</button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
-          )}
-
-          {/* ══ APPOINTMENTS TAB ═══════════════════════════════════════════════ */}
-          {activeTab === 'appointments' && (
-            <div>
-              {/* Stats Row */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-                <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm text-center">
-                  <p className="text-2xl font-bold text-gray-900">{appointments.length}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">Total</p>
-                </div>
-                <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm text-center">
-                  <p className="text-2xl font-bold text-teal-600">{todayCount}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">{t.todayAppointments}</p>
-                </div>
-                <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm text-center">
-                  <p className="text-2xl font-bold text-blue-600">{scheduledCount}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">{t.statusScheduled}</p>
-                </div>
-                <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm text-center">
-                  <p className="text-2xl font-bold text-green-600">{completedCount}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">{t.statusCompleted}</p>
-                </div>
-              </div>
-
-              {/* Toolbar */}
-              <div className={`flex flex-col gap-3 mb-4 ${isRTL ? 'items-end' : 'items-start'}`}>
-                <div className={`flex flex-col sm:flex-row gap-3 w-full items-start sm:items-center justify-between ${isRTL ? 'sm:flex-row-reverse' : ''}`}>
-                  <h2 className="text-lg font-bold text-gray-900">{t.appointments}</h2>
-                  <div className={`flex flex-wrap gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                    {(['all', 'today', 'scheduled'] as const).map(f => (
-                      <button key={f} onClick={() => setApptFilter(f)}
-                        className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all active:scale-95 ${apptFilter === f ? 'bg-teal-600 text-white shadow-sm shadow-teal-500/20' : 'bg-white text-gray-500 border border-gray-200 hover:bg-gray-50'}`}>
-                        {f === 'today' ? t.todayAppointments : f === 'scheduled' ? t.statusScheduled : 'All'}
-                      </button>
-                    ))}
-                    <button onClick={() => { setSelectedAppt(null); setApptDialogOpen(true) }}
-                      className={`flex items-center gap-1.5 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-xl text-sm transition-all shadow-sm shadow-teal-500/20 active:scale-95 hover:-translate-y-0.5 whitespace-nowrap ${isRTL ? 'flex-row-reverse' : ''}`}>
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-                      {t.addAppointment}
-                    </button>
-                  </div>
-                </div>
-                {/* Search + Date Filter */}
-                <div className={`flex flex-col sm:flex-row gap-2 w-full ${isRTL ? 'sm:flex-row-reverse' : ''}`}>
-                  <div className="relative flex-1 sm:max-w-xs">
-                    <input type="text" value={apptSearch} onChange={e => setApptSearch(e.target.value)}
-                      placeholder={t.searchPlaceholder}
-                      className={`w-full px-4 py-2.5 ${isRTL ? 'pr-10 text-right' : 'pl-10'} rounded-xl border border-gray-200 bg-white text-sm outline-none focus:ring-2 focus:ring-teal-500 transition-all shadow-sm`}
-                    />
-                    <span className={`absolute top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none ${isRTL ? 'right-3' : 'left-3'}`}>
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                    </span>
-                  </div>
-                  <input type="date" value={apptDateFilter} onChange={e => setApptDateFilter(e.target.value)}
-                    className="px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm outline-none focus:ring-2 focus:ring-teal-500 transition-all shadow-sm w-full sm:w-auto"
-                  />
-                  {(apptSearch || apptDateFilter) && (
-                    <button onClick={() => { setApptSearch(''); setApptDateFilter('') }}
-                      className="px-3 py-2 text-xs font-semibold text-gray-500 hover:text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors">
-                      ✕ Clear
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {loadingAppts ? <Spinner /> : filteredAppts.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl border border-gray-100">
-                  <div className="w-14 h-14 bg-teal-50 rounded-full flex items-center justify-center mb-3">
-                    <svg className="w-7 h-7 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                  </div>
-                  <p className="text-gray-400 text-sm mb-3">{t.noAppointments}</p>
-                  <button onClick={() => { setSelectedAppt(null); setApptDialogOpen(true) }}
-                    className="text-teal-600 hover:text-teal-700 text-sm font-semibold transition-colors">
-                    + {t.addAppointment}
-                  </button>
-                </div>
-              ) : (
-                <>
-                  {/* Desktop Table */}
-                  <div className="hidden md:block rounded-2xl border border-gray-100 overflow-hidden bg-white shadow-sm">
-                    <table className="w-full text-sm">
-                      <thead className="bg-gray-50 border-b border-gray-100">
-                        <tr>
-                          {[t.patientName, t.appointmentDate, t.appointmentTime, t.reason, t.status, t.actions].map((col, i) => (
-                            <th key={i} className={`px-5 py-3.5 font-semibold text-gray-500 text-xs uppercase tracking-wide ${isRTL ? 'text-right' : 'text-left'}`}>{col}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-50">
-                        {filteredAppts.map(a => (
-                          <tr key={a.id} className="hover:bg-slate-50 transition-colors">
-                            <td className="px-5 py-3.5 font-medium text-gray-900">{a.patient_name}</td>
-                            <td className="px-5 py-3.5 text-gray-600">{fmtDate(a.appointment_date)}</td>
-                            <td className="px-5 py-3.5 text-gray-600">{fmtTime(a.appointment_time)}</td>
-                            <td className="px-5 py-3.5 text-gray-500">{a.reason || '—'}</td>
-                            <td className="px-5 py-3.5">
-                              <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${STATUS_COLORS[a.status] ?? 'bg-gray-100 text-gray-500'}`}>
-                                {statusLabels[a.status] ?? a.status}
-                              </span>
-                            </td>
-                            <td className="px-5 py-3.5">
-                              <div className={`flex gap-1.5 flex-wrap ${isRTL ? 'flex-row-reverse' : ''}`}>
-                                <button onClick={() => { setSelectedAppt(a); setApptDialogOpen(true) }}
-                                  className="px-3 py-1.5 bg-teal-50 hover:bg-teal-100 text-teal-700 rounded-lg text-xs font-semibold transition-colors">{t.edit}</button>
-                                {a.status === 'scheduled' && (
-                                  <>
-                                    <button onClick={() => updateAppointmentStatus(a.id, 'completed')}
-                                      className="px-3 py-1.5 bg-green-50 hover:bg-green-100 text-green-700 rounded-lg text-xs font-semibold transition-colors">✓ {t.statusCompleted}</button>
-                                    <button onClick={() => updateAppointmentStatus(a.id, 'no_show')}
-                                      className="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-lg text-xs font-semibold transition-colors">{t.statusNoShow}</button>
-                                    <button onClick={() => deleteAppointment(a.id)}
-                                      className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-xs font-semibold transition-colors">{t.statusCancelled}</button>
-                                  </>
-                                )}
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  {/* Mobile Cards */}
-                  <div className="md:hidden space-y-2">
-                    {filteredAppts.map(a => (
-                      <div key={a.id} className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
-                        <div className={`flex items-start justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
-                          <div className={isRTL ? 'text-right' : ''}>
-                            <p className="font-semibold text-gray-900 text-sm">{a.patient_name}</p>
-                            <p className="text-gray-500 text-xs mt-0.5">{fmtDate(a.appointment_date)} · {fmtTime(a.appointment_time)}</p>
-                            {a.reason && <p className="text-gray-400 text-xs mt-0.5">{a.reason}</p>}
+                        {p.medical_studies && (
+                          <div className={`mt-3 p-3 bg-slate-50 rounded-xl text-xs text-gray-600 leading-relaxed border border-slate-100 ${isRTL ? 'text-right' : ''}`}>
+                            <div className={`flex items-center gap-1.5 mb-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                              <svg className="w-3.5 h-3.5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>
+                              <span className="font-bold text-blue-600 uppercase tracking-wider text-[10px]">{t.medicalStudies}</span>
+                            </div>
+                            {p.medical_studies}
                           </div>
-                          <span className={`px-2.5 py-1 rounded-full text-xs font-semibold flex-shrink-0 ${STATUS_COLORS[a.status] ?? 'bg-gray-100 text-gray-500'}`}>
-                            {statusLabels[a.status] ?? a.status}
-                          </span>
-                        </div>
-                        <div className={`flex gap-2 flex-wrap mt-3 pt-3 border-t border-gray-50 justify-end ${isRTL ? 'flex-row-reverse justify-start' : ''}`}>
-                          <button onClick={() => { setSelectedAppt(a); setApptDialogOpen(true) }} className="px-3 py-1.5 bg-teal-50 text-teal-700 rounded-lg text-xs font-semibold">{t.edit}</button>
-                          {a.status === 'scheduled' && (
-                            <>
-                              <button onClick={() => updateAppointmentStatus(a.id, 'completed')} className="px-3 py-1.5 bg-green-50 text-green-700 rounded-lg text-xs font-semibold">✓</button>
-                              <button onClick={() => updateAppointmentStatus(a.id, 'no_show')} className="px-3 py-1.5 bg-amber-50 text-amber-700 rounded-lg text-xs font-semibold">{t.statusNoShow}</button>
-                              <button onClick={() => deleteAppointment(a.id)} className="px-3 py-1.5 bg-red-50 text-red-600 rounded-lg text-xs font-semibold">{t.statusCancelled}</button>
-                            </>
-                          )}
+                        )}
+                        <div className={`flex gap-2 mt-3 pt-3 border-t border-gray-50 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                          <button onClick={() => { setSelectedPatient(p); setPatientDialogOpen(true) }} className="flex-1 px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl text-xs font-bold transition-colors">{t.edit}</button>
+                          <button onClick={() => deactivatePatient(p.id)} className="flex-1 px-3 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl text-xs font-bold transition-colors">{t.deactivate}</button>
                         </div>
                       </div>
                     ))}
@@ -669,8 +543,8 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* Secretary sees no Settings tab — show nothing */}
-          {activeTab === 'settings' && authUser.role === 'secretary' && (
+          {/* Access restricted for non-doctor in settings tab */}
+          {activeTab === 'settings' && authUser.role !== 'doctor' && (
             <div className="flex flex-col items-center justify-center py-20 text-center">
               <div className="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center mb-3">
                 <svg className="w-7 h-7 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
@@ -688,16 +562,6 @@ export default function DashboardPage() {
           authUser={authUser}
           onClose={() => { setPatientDialogOpen(false); setSelectedPatient(null) }}
           onSave={() => { setPatientDialogOpen(false); setSelectedPatient(null); loadPatients() }}
-        />
-      )}
-
-      {apptDialogOpen && authUser && (
-        <AppointmentDialog
-          appointment={selectedAppt}
-          patients={patients}
-          authUser={authUser}
-          onClose={() => { setApptDialogOpen(false); setSelectedAppt(null) }}
-          onSave={() => { setApptDialogOpen(false); setSelectedAppt(null); loadAppointments() }}
         />
       )}
     </div>

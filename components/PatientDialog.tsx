@@ -19,6 +19,7 @@ interface FormData {
   gender: 'male' | 'female' | ''
   date_of_birth: string
   blood_type: 'A+' | 'A-' | 'B+' | 'B-' | 'AB+' | 'AB-' | 'O+' | 'O-' | ''
+  medical_studies: string
   address: string
   city: string
   emergency_phone: string
@@ -43,6 +44,7 @@ export default function PatientDialog({ patient, onClose, onSave, authUser }: Pa
     gender: patient?.gender ?? '',
     date_of_birth: patient?.date_of_birth ?? '',
     blood_type: patient?.blood_type ?? '',
+    medical_studies: patient?.medical_studies ?? '',
     address: patient?.address ?? '',
     city: patient?.city ?? '',
     emergency_phone: patient?.emergency_phone ?? '',
@@ -75,6 +77,7 @@ export default function PatientDialog({ patient, onClose, onSave, authUser }: Pa
       gender: form.gender || null,
       date_of_birth: form.date_of_birth || null,
       blood_type: form.blood_type || null,
+      medical_studies: form.medical_studies.trim() || null,
       address: form.address.trim() || null,
       city: form.city.trim() || null,
       emergency_phone: form.emergency_phone.trim() || null,
@@ -232,7 +235,19 @@ export default function PatientDialog({ patient, onClose, onSave, authUser }: Pa
             </div>
           </div>
 
-          {/* Row 4: Address + City */}
+          {/* Row 4: Exams (free text) */}
+          <div>
+            <label className={labelClass}>{t.medicalStudies}</label>
+            <textarea
+              value={form.medical_studies}
+              onChange={(e) => setForm({ ...form, medical_studies: e.target.value })}
+              rows={3}
+              className={`${inputClass()} resize-none`}
+              placeholder={t.medicalStudies}
+            />
+          </div>
+
+          {/* Row 5: Address + City */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className={labelClass}>{t.address}</label>
@@ -256,7 +271,7 @@ export default function PatientDialog({ patient, onClose, onSave, authUser }: Pa
             </div>
           </div>
 
-          {/* Row 5: Emergency Phone */}
+          {/* Row 6: Emergency Phone */}
           <div>
             <label className={labelClass}>{t.emergencyPhone}</label>
             <input
@@ -268,7 +283,7 @@ export default function PatientDialog({ patient, onClose, onSave, authUser }: Pa
             />
           </div>
 
-          {/* Row 6: Notes */}
+          {/* Row 7: Notes */}
           <div>
             <label className={labelClass}>{t.notes}</label>
             <textarea

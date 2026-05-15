@@ -68,7 +68,7 @@ npm run lint
 - **Files**: PascalCase for components (`PatientDialog.tsx`), camelCase for utilities (`i18n.ts`)
 - **Components**: Capitalized (`export default function PatientDialog()`)
 - **Interfaces**: PascalCase with descriptive names (`interface Patient`)
-- **Variables**: camelCase (`patientSearch`, `apptFilter`)
+- **Variables**: camelCase (`patientSearch`, `clinicForm`)
 - **Constants**: SCREAMING_SNAKE_CASE for config values
 - **CSS Classes**: Tailwind utility classes preferred; use.kebab-case for custom CSS if needed
 
@@ -91,7 +91,7 @@ npm run lint
   ```
 
 ### Database (Supabase)
-- Tables: `clinics`, `users`, `patients`, `appointments`
+- Tables: `clinics`, `users`, `patients`
 - All tables have `id` (UUID), `created_at`, `updated_at`
 - Soft delete pattern: use `is_active: boolean` flag
 - RLS policies should be configured in Supabase dashboard
@@ -100,7 +100,6 @@ npm run lint
 - Use responsive prefixes: `sm:`, `md:`, `lg:`
 - RTL support: use `{isRTL ? 'flex-row-reverse' : ''}` pattern
 - Colors: primary blue (`blue-600`), accent teal (`teal-600`)
-- Status colors: scheduled=blue, completed=green, cancelled=gray, no_show=red
 
 ## 3. Project Structure
 
@@ -115,7 +114,6 @@ myclinic/
 ├── components/           # React components
 │   ├── Sidebar.tsx       # Navigation sidebar
 │   ├── PatientDialog.tsx # Patient form modal
-│   ├── AppointmentDialog.tsx
 │   ├── LanguageSwitcher.tsx
 │   ├── LoadingScreen.tsx
 │   └── Logo.tsx
@@ -143,11 +141,10 @@ myclinic/
 | `app/dashboard/page.tsx` | Main app | All CRUD operations |
 | `components/Sidebar.tsx` | Navigation | Role-based tabs |
 | `components/PatientDialog.tsx` | Patient form | Add/edit patients |
-| `components/AppointmentDialog.tsx` | Appointment form | Schedule appointments |
 | `components/LanguageSwitcher.tsx` | i18n toggle | Switch AR/FR/EN |
 | `lib/supabase.ts` | DB client | Supabase connection |
 | `lib/i18n.ts` | Translations | AR/FR/EN strings |
-| `types/index.ts` | TypeScript types | Clinic, User, Patient, Appointment |
+| `types/index.ts` | TypeScript types | Clinic, User, Patient |
 
 ## 5. Common Operations
 
@@ -164,15 +161,7 @@ const { data } = await supabase
 ```typescript
 await supabase
   .from('patients')
-  .insert({ clinic_id, full_name, phone, ... })
-```
-
-### Updating Appointment Status
-```typescript
-await supabase
-  .from('appointments')
-  .update({ status: 'completed' })
-  .eq('id', appointmentId)
+  .insert({ clinic_id, full_name, phone, medical_studies, ... })
 ```
 
 ### Auth Check

@@ -32,13 +32,11 @@ interface StepErrors {
 export default function RegisterPage() {
   const { t, isRTL } = useT()
   const router = useRouter()
-  // Start with true for hydration matching
   const [checking, setChecking] = useState(true)
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
   const [serverError, setServerError] = useState('')
 
-  // After mount: redirect if already logged in or show form
   useEffect(() => {
     startTransition(() => {
       const stored = localStorage.getItem('clinic_user')
@@ -98,7 +96,6 @@ export default function RegisterPage() {
     setServerError('')
 
     try {
-      // 1. Insert clinic
       const { data: clinicData, error: clinicError } = await supabase
         .from('clinics')
         .insert({
@@ -114,7 +111,6 @@ export default function RegisterPage() {
 
       if (clinicError) throw clinicError
 
-      // 2. Insert doctor user
       const { data: userData, error: userError } = await supabase
         .from('users')
         .insert({
@@ -132,17 +128,12 @@ export default function RegisterPage() {
         .single()
 
       if (userError) {
-        // Rollback: delete clinic if user insert fails
         await supabase.from('clinics').delete().eq('id', clinicData.id)
-        if (userError.code === '23505') {
-          setServerError(t.errorUserExists)
-        } else {
-          setServerError(t.errorGeneric)
-        }
+        if (userError.code === '23505') setServerError(t.errorUserExists)
+        else setServerError(t.errorGeneric)
         return
       }
 
-      // 3. Auto-login: store session and go directly to dashboard
       if (userData) {
         localStorage.setItem('clinic_user', JSON.stringify({
           id: userData.id,
@@ -159,256 +150,138 @@ export default function RegisterPage() {
     }
   }
 
-  const inputClass = (hasError?: boolean) =>
-    `w-full px-4 py-3 rounded-xl border text-sm transition-all duration-200 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm focus:shadow-md ${
-      hasError ? 'border-red-400 bg-red-50' : 'border-gray-200 bg-gray-50 focus:bg-white'
-    } ${isRTL ? 'text-right' : ''}`
-
-  const labelClass = `block text-sm font-medium text-gray-700 mb-1.5 ${isRTL ? 'text-right' : ''}`
-
-  const steps = [
-    { num: 1, label: t.step1 },
-    { num: 2, label: t.step2 },
-    { num: 3, label: t.step3 },
-  ]
-
-  // Show branded loader immediately if already logged in
   if (checking) return <LoadingScreen />
 
+  const inputClass = (hasError?: boolean) =>
+    `w-full px-4 py-3.5 rounded-2xl border ${hasError ? 'border-red-400 bg-red-50/30' : 'border-gray-200 bg-gray-50/50'} focus:bg-white text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 shadow-sm shadow-black/5`
+
+  const labelClass = `block text-[10px] font-black text-gray-400 mb-1.5 uppercase tracking-widest ${isRTL ? 'text-right' : ''}`
+
   return (
-    <div className="min-h-screen bg-white" dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* Header */}
-      <header className="border-b border-gray-100">
-        <div className={`max-w-2xl mx-auto px-4 h-14 flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
-          <Link href="/" className={`flex items-center gap-2.5 ${isRTL ? 'flex-row-reverse' : ''}`}>
-            <Logo className="w-8 h-8" />
-            <span className="font-bold text-gray-900 text-sm">{t.appName}</span>
-          </Link>
-          <LanguageSwitcher />
-        </div>
-      </header>
-
-      <main className="max-w-2xl mx-auto px-4 py-10">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-extrabold text-gray-900 mb-2">{t.registerTitle}</h1>
-        </div>
-
-        {/* Step Indicator */}
-        <div className={`flex items-center justify-center mb-8 ${isRTL ? 'flex-row-reverse' : ''}`}>
-          {steps.map((s, idx) => (
-            <div key={s.num} className={`flex items-center ${isRTL && idx < steps.length - 1 ? 'flex-row-reverse' : ''}`}>
-              <div className="flex flex-col items-center">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-all duration-300 ${
-                  step > s.num
-                    ? 'bg-blue-600 text-white'
-                    : step === s.num
-                    ? 'bg-blue-600 text-white ring-4 ring-blue-100'
-                    : 'bg-gray-100 text-gray-400'
-                }`}>
-                  {step > s.num ? (
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                  ) : s.num}
-                </div>
-                <span className={`text-xs mt-1.5 font-medium ${step === s.num ? 'text-blue-600' : 'text-gray-400'}`}>
-                  {s.label}
-                </span>
-              </div>
-              {idx < steps.length - 1 && (
-                <div className={`w-16 sm:w-24 h-0.5 mx-2 mb-5 transition-colors duration-300 ${step > s.num ? 'bg-blue-600' : 'bg-gray-200'}`} />
-              )}
-            </div>
-          ))}
-        </div>
-
-        {/* Card */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
-          {/* Server Error */}
-          {serverError && (
-            <div className="flex items-center gap-2 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm mb-6">
-              <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-              </svg>
-              {serverError}
-            </div>
-          )}
-
-          {/* Step 1 — Doctor Info */}
-          {step === 1 && (
-            <div className="space-y-5">
-              <h2 className={`text-lg font-bold text-gray-800 mb-4 ${isRTL ? 'text-right' : ''}`}>{t.doctorInfo}</h2>
-              <div>
-                <label className={labelClass}>{t.doctorName} <span className="text-red-500">*</span></label>
-                <input type="text" value={doctor.full_name}
-                  onChange={(e) => setDoctor({ ...doctor, full_name: e.target.value })}
-                  className={inputClass(!!errors.full_name)} placeholder={t.doctorName} />
-                {errors.full_name && <p className="text-red-500 text-xs mt-1">{errors.full_name}</p>}
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className={labelClass}>{t.doctorUsername} <span className="text-red-500">*</span></label>
-                  <input type="text" value={doctor.username}
-                    onChange={(e) => setDoctor({ ...doctor, username: e.target.value })}
-                    className={inputClass(!!errors.username)} placeholder={t.doctorUsername} />
-                  {errors.username && <p className="text-red-500 text-xs mt-1">{errors.username}</p>}
-                </div>
-                <div>
-                  <label className={labelClass}>{t.doctorPhone}</label>
-                  <input type="tel" value={doctor.phone}
-                    onChange={(e) => setDoctor({ ...doctor, phone: e.target.value })}
-                    className={inputClass()} placeholder={t.doctorPhone} />
-                </div>
-              </div>
-              <div>
-                <label className={labelClass}>{t.doctorEmail} <span className="text-red-500">*</span></label>
-                <input type="email" value={doctor.email}
-                  onChange={(e) => setDoctor({ ...doctor, email: e.target.value })}
-                  className={inputClass(!!errors.email)} placeholder={t.doctorEmail} />
-                {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
-              </div>
-              <div>
-                <label className={labelClass}>{t.doctorPassword} <span className="text-red-500">*</span></label>
-                <input type="password" value={doctor.password}
-                  onChange={(e) => setDoctor({ ...doctor, password: e.target.value })}
-                  className={inputClass(!!errors.password)} placeholder="••••••••" />
-                {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
-              </div>
-            </div>
-          )}
-
-          {/* Step 2 — Clinic Info */}
-          {step === 2 && (
-            <div className="space-y-5">
-              <h2 className={`text-lg font-bold text-gray-800 mb-4 ${isRTL ? 'text-right' : ''}`}>{t.clinicInfoLabel}</h2>
-              <div>
-                <label className={labelClass}>{t.clinicNameLabel} <span className="text-red-500">*</span></label>
-                <input type="text" value={clinic.name}
-                  onChange={(e) => setClinic({ ...clinic, name: e.target.value })}
-                  className={inputClass(!!errors.clinic_name)} placeholder={t.clinicNameLabel} />
-                {errors.clinic_name && <p className="text-red-500 text-xs mt-1">{errors.clinic_name}</p>}
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className={labelClass}>{t.clinicSpecialty} <span className="text-red-500">*</span></label>
-                  <input type="text" value={clinic.specialty}
-                    onChange={(e) => setClinic({ ...clinic, specialty: e.target.value })}
-                    className={inputClass(!!errors.clinic_specialty)} placeholder={t.clinicSpecialty} />
-                  {errors.clinic_specialty && <p className="text-red-500 text-xs mt-1">{errors.clinic_specialty}</p>}
-                </div>
-                <div>
-                  <label className={labelClass}>{t.clinicCity}</label>
-                  <input type="text" value={clinic.city}
-                    onChange={(e) => setClinic({ ...clinic, city: e.target.value })}
-                    className={inputClass()} placeholder={t.clinicCity} />
-                </div>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className={labelClass}>{t.clinicPhoneLabel}</label>
-                  <input type="tel" value={clinic.phone}
-                    onChange={(e) => setClinic({ ...clinic, phone: e.target.value })}
-                    className={inputClass()} placeholder={t.clinicPhoneLabel} />
-                </div>
-                <div>
-                  <label className={labelClass}>{t.clinicEmailLabel}</label>
-                  <input type="email" value={clinic.email}
-                    onChange={(e) => setClinic({ ...clinic, email: e.target.value })}
-                    className={inputClass()} placeholder={t.clinicEmailLabel} />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Step 3 — Review */}
-          {step === 3 && (
-            <div className="space-y-6">
-              <h2 className={`text-lg font-bold text-gray-800 mb-4 ${isRTL ? 'text-right' : ''}`}>{t.reviewAndSubmit}</h2>
-
-              {/* Doctor Review */}
-              <div className="bg-blue-50 rounded-xl p-5">
-                <h3 className={`font-semibold text-blue-700 text-sm uppercase tracking-wide mb-3 ${isRTL ? 'text-right' : ''}`}>{t.doctorInfo}</h3>
-                <div className="space-y-2">
-                  {[
-                    { label: t.doctorName, value: doctor.full_name },
-                    { label: t.doctorUsername, value: doctor.username },
-                    { label: t.doctorEmail, value: doctor.email },
-                    { label: t.doctorPhone, value: doctor.phone || '—' },
-                  ].map(({ label, value }, i) => (
-                    <div key={i} className={`flex gap-2 text-sm ${isRTL ? 'flex-row-reverse' : ''}`}>
-                      <span className="text-gray-500 flex-shrink-0">{label}:</span>
-                      <span className="font-medium text-gray-800">{value}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Clinic Review */}
-              <div className="bg-indigo-50 rounded-xl p-5">
-                <h3 className={`font-semibold text-indigo-700 text-sm uppercase tracking-wide mb-3 ${isRTL ? 'text-right' : ''}`}>{t.clinicInfoLabel}</h3>
-                <div className="space-y-2">
-                  {[
-                    { label: t.clinicNameLabel, value: clinic.name },
-                    { label: t.clinicSpecialty, value: clinic.specialty },
-                    { label: t.clinicCity, value: clinic.city || '—' },
-                    { label: t.clinicPhoneLabel, value: clinic.phone || '—' },
-                    { label: t.clinicEmailLabel, value: clinic.email || '—' },
-                  ].map(({ label, value }, i) => (
-                    <div key={i} className={`flex gap-2 text-sm ${isRTL ? 'flex-row-reverse' : ''}`}>
-                      <span className="text-gray-500 flex-shrink-0">{label}:</span>
-                      <span className="font-medium text-gray-800">{value}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Navigation Buttons */}
-          <div className={`flex gap-3 mt-8 ${isRTL ? 'flex-row-reverse' : ''}`}>
-            {step > 1 && (
-              <button
-                onClick={handleBack}
-                className="flex-1 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-all active:scale-95 text-sm"
-              >
-                {t.back}
-              </button>
-            )}
-            {step < 3 ? (
-              <button
-                onClick={handleNext}
-                className="flex-1 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-all duration-200 active:scale-95 hover:-translate-y-0.5 shadow-sm shadow-blue-500/20 text-sm"
-              >
-                {t.next}
-              </button>
-            ) : (
-              <button
-                onClick={handleSubmit}
-                disabled={loading}
-                className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold rounded-xl transition-all duration-200 active:scale-95 hover:-translate-y-0.5 shadow-sm shadow-blue-500/20 text-sm"
-              >
-                {loading ? (
-                  <>
-                    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                    </svg>
-                    {t.submitting}
-                  </>
-                ) : t.submit}
-              </button>
-            )}
+    <div className={`min-h-screen flex bg-white ${isRTL ? 'flex-row-reverse text-right' : ''}`} dir={isRTL ? 'rtl' : 'ltr'}>
+      
+      {/* ── Left Branding ── */}
+      <div className="hidden lg:flex lg:w-[38%] relative overflow-hidden bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-700 items-center justify-center p-12">
+        <div className="absolute top-[-10%] left-[-10%] w-[120%] h-[120%] opacity-20 bg-[radial-gradient(circle_at_center,_white_1px,_transparent_1px)] bg-[length:32px_32px]" />
+        <div className="absolute top-0 left-0 w-64 h-64 bg-white/10 rounded-full blur-[80px] -translate-x-1/2 -translate-y-1/2 animate-pulse" />
+        <div className="relative z-10 text-center max-w-sm">
+          <div className="bg-white/10 backdrop-blur-md rounded-[2.5rem] p-8 border border-white/20 shadow-2xl mb-10 transform rotate-2">
+             <Logo className="w-24 h-24 mx-auto drop-shadow-2xl" />
           </div>
+          <h1 className="text-3xl font-black text-white mb-4 uppercase tracking-tighter">{t.appName}</h1>
+          <p className="text-blue-100 font-medium opacity-80 leading-relaxed">{t.heroSubtitle}</p>
         </div>
+      </div>
 
-        {/* Login Link */}
-        <p className={`text-center text-sm text-gray-500 mt-6 ${isRTL ? '' : ''}`}>
-          {t.alreadyHaveAccount}{' '}
-          <Link href="/login" className="text-blue-600 hover:text-blue-700 font-semibold">
-            {t.loginLink}
+      {/* ── Right Form ── */}
+      <div className="flex-1 flex flex-col bg-slate-50 relative">
+        <header className={`absolute top-6 ${isRTL ? 'left-6' : 'right-6'} z-30 flex items-center gap-4`}>
+          <LanguageSwitcher />
+          <Link href="/" className="w-10 h-10 rounded-xl bg-white border border-gray-200 shadow-sm flex items-center justify-center hover:bg-gray-50">
+             <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
           </Link>
-        </p>
-      </main>
+        </header>
+
+        <main className="flex-1 flex items-center justify-center p-6 sm:p-12 lg:p-16 relative">
+          <div className="w-full max-w-xl relative z-10">
+            
+            <div className="mb-8">
+              <h2 className="text-3xl font-black text-gray-900 mb-6 leading-tight">{t.registerTitle}</h2>
+              <div className="relative w-full h-1.5 bg-gray-200 rounded-full overflow-hidden mb-2">
+                <div 
+                  className="absolute top-0 h-full bg-blue-600 transition-all duration-500 ease-out shadow-sm" 
+                  style={{ 
+                    width: `${(step / 3) * 100}%`,
+                    [isRTL ? 'right' : 'left']: 0 
+                  }}
+                />
+              </div>
+              <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-gray-400">
+                <span className={step >= 1 ? 'text-blue-600' : ''}>{t.step1}</span>
+                <span className={step >= 2 ? 'text-blue-600' : ''}>{t.step2}</span>
+                <span className={step >= 3 ? 'text-blue-600' : ''}>{t.step3}</span>
+              </div>
+            </div>
+
+            <div className="bg-white/80 backdrop-blur-2xl border border-white/50 rounded-[2.5rem] p-8 sm:p-10 shadow-2xl shadow-blue-900/5 relative overflow-hidden">
+              <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-blue-500/20 to-transparent" />
+              
+              {serverError && (
+                <div className={`flex items-center gap-3 px-4 py-4 bg-red-50 border border-red-100 rounded-2xl text-red-700 text-sm mb-6 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                  <svg className="w-5 h-5 opacity-80" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" /></svg>
+                  <span className="font-medium">{serverError}</span>
+                </div>
+              )}
+
+              {step === 1 && (
+                <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                  <div>
+                    <label className={labelClass}>{t.doctorName} *</label>
+                    <input type="text" value={doctor.full_name} onChange={e => setDoctor({...doctor, full_name: e.target.value})} className={inputClass(!!errors.full_name)} placeholder={t.doctorName} />
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div><label className={labelClass}>{t.doctorUsername} *</label><input type="text" value={doctor.username} onChange={e => setDoctor({...doctor, username: e.target.value})} className={inputClass(!!errors.username)} placeholder={t.doctorUsername} /></div>
+                    <div><label className={labelClass}>{t.doctorPhone}</label><input type="tel" value={doctor.phone} onChange={e => setDoctor({...doctor, phone: e.target.value})} className={inputClass()} placeholder={t.doctorPhone} /></div>
+                  </div>
+                  <div><label className={labelClass}>{t.doctorEmail} *</label><input type="email" value={doctor.email} onChange={e => setDoctor({...doctor, email: e.target.value})} className={inputClass(!!errors.email)} placeholder={t.doctorEmail} /></div>
+                  <div><label className={labelClass}>{t.doctorPassword} *</label><input type="password" value={doctor.password} onChange={e => setDoctor({...doctor, password: e.target.value})} className={inputClass(!!errors.password)} placeholder="••••••••" /></div>
+                </div>
+              )}
+
+              {step === 2 && (
+                <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                  <div><label className={labelClass}>{t.clinicNameLabel} *</label><input type="text" value={clinic.name} onChange={e => setClinic({...clinic, name: e.target.value})} className={inputClass(!!errors.clinic_name)} placeholder={t.clinicNameLabel} /></div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div><label className={labelClass}>{t.clinicSpecialty} *</label><input type="text" value={clinic.specialty} onChange={e => setClinic({...clinic, specialty: e.target.value})} className={inputClass(!!errors.clinic_specialty)} placeholder={t.clinicSpecialty} /></div>
+                    <div><label className={labelClass}>{t.clinicCity}</label><input type="text" value={clinic.city} onChange={e => setClinic({...clinic, city: e.target.value})} className={inputClass()} placeholder={t.clinicCity} /></div>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div><label className={labelClass}>{t.clinicPhoneLabel}</label><input type="tel" value={clinic.phone} onChange={e => setClinic({...clinic, phone: e.target.value})} className={inputClass()} placeholder={t.clinicPhoneLabel} /></div>
+                    <div><label className={labelClass}>{t.clinicEmailLabel}</label><input type="email" value={clinic.email} onChange={e => setClinic({...clinic, email: e.target.value})} className={inputClass()} placeholder={t.clinicEmailLabel} /></div>
+                  </div>
+                </div>
+              )}
+
+              {step === 3 && (
+                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                  <div className="p-5 bg-blue-50/50 rounded-2xl border border-blue-100/50">
+                    <h3 className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em] mb-3">{t.doctorInfo}</h3>
+                    <div className="space-y-2 text-sm font-medium text-gray-600">
+                      <p>{doctor.full_name} • <span className="text-gray-400">@{doctor.username}</span></p>
+                      <p>{doctor.email}</p>
+                    </div>
+                  </div>
+                  <div className="p-5 bg-indigo-50/50 rounded-2xl border border-indigo-100/50">
+                    <h3 className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em] mb-3">{t.clinicInfoLabel}</h3>
+                    <div className="space-y-2 text-sm font-medium text-gray-600">
+                      <p className="text-lg font-black text-gray-900">{clinic.name}</p>
+                      <p>{clinic.specialty} • {clinic.city || '—'}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className={`flex gap-3 mt-8 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                {step > 1 && (
+                  <button onClick={handleBack} className="flex-1 h-[3.5rem] bg-gray-100 hover:bg-gray-200 text-gray-700 font-black rounded-2xl transition-all active:scale-95 uppercase tracking-widest text-sm">{t.back}</button>
+                )}
+                <button
+                  onClick={step < 3 ? handleNext : handleSubmit}
+                  disabled={loading}
+                  className="flex-[2] h-[3.5rem] flex items-center justify-center gap-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-black rounded-2xl transition-all active:scale-95 shadow-xl shadow-blue-600/20 uppercase tracking-widest text-sm"
+                >
+                  {loading ? <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg> : (step < 3 ? t.next : t.submit)}
+                </button>
+              </div>
+            </div>
+
+            <p className="text-center mt-8 text-gray-500 font-medium">
+              {t.alreadyHaveAccount}{' '}
+              <Link href="/login" className="text-blue-600 hover:text-blue-700 font-black border-b-2 border-blue-600/20 hover:border-blue-600 transition-all">{t.loginLink}</Link>
+            </p>
+          </div>
+        </main>
+      </div>
     </div>
   )
 }
