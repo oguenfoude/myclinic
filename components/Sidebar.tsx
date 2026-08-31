@@ -6,7 +6,7 @@ import { useT } from '@/lib/i18n'
 import { AuthUser } from '@/types'
 import Logo from '@/components/Logo'
 
-type Tab = 'patients' | 'settings'
+type Tab = 'patients' | 'analytics' | 'settings'
 
 interface SidebarProps {
   activeTab: Tab
@@ -17,6 +17,13 @@ const PatientsIcon = () => (
   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75}
       d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+  </svg>
+)
+
+const AnalyticsIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75}
+      d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
   </svg>
 )
 
@@ -46,7 +53,6 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
     catch { return null }
   })
 
-
   const handleLogout = () => {
     localStorage.removeItem('clinic_user')
     router.push('/login')
@@ -54,6 +60,7 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
 
   const navItems = [
     { id: 'patients' as Tab, label: t.patients, icon: <PatientsIcon /> },
+    { id: 'analytics' as Tab, label: t.analytics, icon: <AnalyticsIcon /> },
     ...(user?.role === 'doctor'
       ? [{ id: 'settings' as Tab, label: t.settings, icon: <SettingsIcon /> }]
       : []),
@@ -66,10 +73,10 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
         onClick={() => onTabChange(item.id)}
         className={`
           w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200
-          ${isRTL ? 'flex-row-reverse' : ''}
+         
           ${isActive
-            ? 'bg-blue-600 text-white shadow-sm'
-            : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
+            ? 'bg-primary text-white shadow-sm'
+            : 'text-gray-600 hover:text-primary-dark hover:bg-primary-light'
           }
         `}
       >
@@ -81,14 +88,13 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
 
   return (
     <>
-      {/* ── Desktop Sidebar ── */}
+      {/* Desktop Sidebar */}
       <aside
-        className={`hidden md:flex flex-col w-60 min-h-screen bg-white border-gray-100 shadow-sm fixed top-0 z-20 ${
+        className={`hidden md:flex flex-col w-60 min-h-screen bg-white border-primary-100 shadow-sm fixed top-0 z-20 ${
           isRTL ? 'right-0 border-l' : 'left-0 border-r'
         }`}
       >
-        {/* Brand */}
-        <div className={`flex items-center gap-2.5 px-5 py-5 border-b border-gray-50 ${isRTL ? 'flex-row-reverse' : ''}`}>
+        <div className={`flex items-center gap-2.5 px-5 py-5 border-b border-primary-100`}>
           <Logo className="w-8 h-8 flex-shrink-0" />
           <div className={isRTL ? 'text-right' : ''}>
             <p className="font-bold text-gray-900 text-sm leading-none">{t.appName}</p>
@@ -96,17 +102,15 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
           </div>
         </div>
 
-        {/* Nav */}
         <nav className="flex-1 px-3 py-4 space-y-1">
           {navItems.map((item) => <NavItem key={item.id} item={item} />)}
         </nav>
 
-        {/* User info + Logout */}
-        <div className="px-3 py-4 border-t border-gray-50 space-y-2">
+        <div className="px-3 py-4 border-t border-primary-100 space-y-2">
           {user && (
-            <div className={`flex items-center gap-2.5 px-2 py-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-              <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                <span className="text-blue-700 font-bold text-xs">
+            <div className={`flex items-center gap-2.5 px-2 py-2`}>
+              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <span className="text-primary font-bold text-xs">
                   {user.full_name.charAt(0).toUpperCase()}
                 </span>
               </div>
@@ -118,7 +122,7 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
           )}
           <button
             onClick={handleLogout}
-            className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium text-red-500 hover:bg-red-50 transition-colors ${isRTL ? 'flex-row-reverse' : ''}`}
+            className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium text-danger hover:bg-danger-light transition-colors`}
           >
             <LogoutIcon />
             {t.logout}
@@ -126,8 +130,8 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
         </div>
       </aside>
 
-      {/* ── Mobile Bottom Nav ── */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-20 bg-white border-t border-gray-100 shadow-lg">
+      {/* Mobile Bottom Nav */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-20 bg-white border-t border-primary-100 shadow-lg">
         <div className="flex items-center justify-around py-1 px-2">
           {navItems.map((item) => {
             const isActive = activeTab === item.id
@@ -136,7 +140,7 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
                 key={item.id}
                 onClick={() => onTabChange(item.id)}
                 className={`flex flex-col items-center gap-1 px-3 py-2 rounded-xl min-w-[56px] transition-all ${
-                  isActive ? 'text-blue-600' : 'text-gray-400 hover:text-gray-600'
+                  isActive ? 'text-primary' : 'text-gray-400 hover:text-gray-600'
                 }`}
               >
                 {item.icon}
@@ -146,7 +150,7 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
           })}
           <button
             onClick={handleLogout}
-            className="flex flex-col items-center gap-1 px-3 py-2 rounded-xl text-red-400 hover:text-red-600 transition-colors"
+            className="flex flex-col items-center gap-1 px-3 py-2 rounded-xl text-danger hover:text-danger-hover transition-colors"
           >
             <LogoutIcon />
             <span className="text-xs font-medium">{t.logout}</span>

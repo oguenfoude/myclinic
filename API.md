@@ -472,10 +472,10 @@ const translations = {
 
 | Status | Tailwind Class | Use |
 |--------|--------------|-----|
-| scheduled | `bg-blue-100 text-blue-700` | Blue pill |
-| completed | `bg-green-100 text-green-700` | Green pill |
+| scheduled | `bg-primary/10 text-primary` | Blue pill |
+| completed | `bg-success/10 text-success` | Green pill |
 | cancelled | `bg-gray-100 text-gray-500` | Gray pill |
-| no_show | `bg-red-100 text-red-600` | Red pill |
+| no_show | `bg-danger-light text-danger` | Red pill |
 
 ---
 

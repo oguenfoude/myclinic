@@ -17,7 +17,7 @@ export default function LanguageSwitcher() {
   ]
 
   return (
-    <div className="flex items-center gap-1 bg-white/10 backdrop-blur-sm rounded-lg p-1">
+    <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
       {langs.map(({ code, label }) => (
         <button
           key={code}
@@ -25,8 +25,8 @@ export default function LanguageSwitcher() {
           className={`
             px-3 py-1.5 rounded-md text-sm font-semibold transition-all duration-200
             ${lang === code
-              ? 'bg-blue-600 text-white shadow-sm'
-              : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'
+              ? 'bg-primary text-white shadow-sm'
+              : 'text-gray-600 hover:text-primary hover:bg-primary/10'
             }
           `}
         >

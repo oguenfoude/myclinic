@@ -32,15 +32,9 @@ export interface Patient {
   clinic_id: string
   full_name: string
   phone: string
-  email: string | null
   gender: 'male' | 'female' | null
-  date_of_birth: string | null
-  blood_type: 'A+' | 'A-' | 'B+' | 'B-' | 'AB+' | 'AB-' | 'O+' | 'O-' | null
   medical_studies: string | null
-  address: string | null
-  city: string | null
-  emergency_phone: string | null
-  notes: string | null
+  price: number
   is_active: boolean
   created_by: string | null
   created_at: string
@@ -52,4 +46,20 @@ export interface AuthUser {
   clinic_id: string
   full_name: string
   role: 'doctor' | 'secretary'
+}
+
+export type AppointmentStatus = 'scheduled' | 'completed' | 'cancelled' | 'no_show'
+
+export interface Appointment {
+  id: string
+  clinic_id: string
+  patient_id: string
+  appointment_date: string
+  appointment_time: string
+  reason: string | null
+  status: AppointmentStatus
+  notes: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
 }

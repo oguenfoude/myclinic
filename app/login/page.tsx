@@ -46,20 +46,15 @@ export default function LoginPage() {
 
     try {
       const { data, error: dbError } = await supabase
-        .from('users')
-        .select('id, clinic_id, full_name, role, password, is_active')
-        .eq('username', username.trim().toLowerCase())
-        .single()
+        .rpc('app_login', {
+          p_username: username.trim().toLowerCase(),
+          p_password: password,
+        })
 
-      if (dbError || !data || !data.is_active || data.password !== password) {
+      if (dbError || !data?.ok) {
         setError(t.errorWrongCredentials)
         return
       }
-
-      await supabase
-        .from('users')
-        .update({ last_login: new Date().toISOString() })
-        .eq('id', data.id)
 
       const authUser: AuthUser = {
         id: data.id,
@@ -77,13 +72,13 @@ export default function LoginPage() {
     }
   }
 
-  const inputClass = `w-full px-4 py-3.5 rounded-2xl border border-gray-200 bg-gray-50/50 focus:bg-white text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 shadow-sm shadow-black/5`
+  const inputClass = `w-full px-4 py-3.5 rounded-2xl border border-primary-200 bg-primary-light/40 focus:bg-white text-gray-900 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-300 shadow-sm shadow-primary/5`
 
   return (
-    <div className={`min-h-screen flex bg-white ${isRTL ? 'flex-row-reverse text-right' : ''}`} dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className={`min-h-screen flex bg-white ${isRTL ? 'text-right' : ''}`} dir={isRTL ? 'rtl' : 'ltr'}>
       
       {/* ── Left/Branding Panel (Hidden on Mobile) ── */}
-      <div className="hidden lg:flex lg:w-[42%] relative overflow-hidden bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-700 items-center justify-center p-12">
+      <div className="hidden lg:flex lg:w-[42%] relative overflow-hidden bg-gradient-to-br from-primary via-accent to-accent-dark items-center justify-center p-12">
         {/* Animated Background elements */}
         <div className="absolute top-[-10%] left-[-10%] w-[120%] h-[120%] opacity-20 bg-[radial-gradient(circle_at_center,_white_1px,_transparent_1px)] bg-[length:32px_32px]" />
         <div className="absolute top-0 left-0 w-64 h-64 bg-white/10 rounded-full blur-[80px] -translate-x-1/2 -translate-y-1/2 animate-pulse" />
@@ -94,7 +89,7 @@ export default function LoginPage() {
              <Logo className="w-24 h-24 mx-auto drop-shadow-2xl" />
           </div>
           <h1 className="text-4xl font-extrabold text-white mb-4 tracking-tight leading-tight">{t.appName}</h1>
-          <p className="text-blue-100 text-lg font-medium opacity-80 leading-relaxed">{t.heroSubtitle}</p>
+          <p className="text-primary-100 text-lg font-medium opacity-80 leading-relaxed">{t.heroSubtitle}</p>
           
           <div className="mt-12 flex justify-center gap-1.5">
             <div className="h-1.5 w-8 rounded-full bg-white shadow-sm shadow-white/50" />
@@ -105,11 +100,11 @@ export default function LoginPage() {
       </div>
 
       {/* ── Right/Form Panel ── */}
-      <div className="flex-1 flex flex-col bg-slate-50 relative">
+      <div className="flex-1 flex flex-col bg-surface relative">
         <header className={`absolute top-6 ${isRTL ? 'left-6' : 'right-6'} z-30 flex items-center gap-4`}>
           <LanguageSwitcher />
-          <Link href="/" className="w-10 h-10 rounded-xl bg-white border border-gray-200 shadow-sm flex items-center justify-center hover:bg-gray-50 transition-colors">
-            <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <Link href="/" className="w-10 h-10 rounded-xl bg-primary-light/50 border border-primary-200 shadow-sm flex items-center justify-center hover:bg-primary-light transition-colors">
+            <svg className="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
             </svg>
           </Link>
@@ -117,7 +112,7 @@ export default function LoginPage() {
 
         <main className="flex-1 flex items-center justify-center p-6 sm:p-12 lg:p-20 relative overflow-hidden">
           {/* Mobile Background decoration */}
-          <div className="lg:hidden absolute top-[-10%] right-[-10%] w-64 h-64 bg-blue-200 rounded-full blur-[80px] opacity-20" />
+          <div className="lg:hidden absolute top-[-10%] right-[-10%] w-64 h-64 bg-primary-200 rounded-full blur-[80px] opacity-20" />
           
           <div className="w-full max-w-md relative z-10">
             {/* Mobile Header */}
@@ -132,12 +127,12 @@ export default function LoginPage() {
             </div>
 
             {/* Glass Form Card */}
-            <div className="bg-white/80 backdrop-blur-2xl border border-white/50 rounded-[2.5rem] p-8 sm:p-10 shadow-2xl shadow-blue-900/5 relative overflow-hidden">
-              <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-blue-500/20 to-transparent" />
+            <div className="bg-white/80 backdrop-blur-2xl border border-white/50 rounded-[2.5rem] p-8 sm:p-10 shadow-2xl shadow-primary/5 relative overflow-hidden">
+              <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
               
               <form onSubmit={handleSubmit} className="space-y-6" noValidate>
                 {error && (
-                  <div className={`flex items-center gap-3 px-4 py-4 bg-red-50 border border-red-100 rounded-[1.25rem] text-red-700 text-sm ${isRTL ? 'flex-row-reverse' : ''}`}>
+                  <div className={`flex items-center gap-3 px-4 py-4 bg-danger-light border border-danger-100 rounded-[1.25rem] text-danger text-sm`}>
                     <svg className="w-5 h-5 flex-shrink-0 opacity-80" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                     </svg>
@@ -153,10 +148,10 @@ export default function LoginPage() {
                       value={username}
                       onChange={(e) => { setUsername(e.target.value); setError('') }}
                       autoComplete="username"
-                      className={`${inputClass} ${isRTL ? 'pr-12' : 'pl-12'} group-hover:border-blue-200 transition-colors`}
+                      className={`${inputClass} ${isRTL ? 'pr-12' : 'pl-12'} group-hover:border-primary-200 transition-colors`}
                       placeholder={t.username}
                     />
-                    <div className={`absolute top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors ${isRTL ? 'right-4' : 'left-4'}`}>
+                    <div className={`absolute top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-primary transition-colors ${isRTL ? 'right-4' : 'left-4'}`}>
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                       </svg>
@@ -172,10 +167,10 @@ export default function LoginPage() {
                       value={password}
                       onChange={(e) => { setPassword(e.target.value); setError('') }}
                       autoComplete="current-password"
-                      className={`${inputClass} ${isRTL ? 'pr-12 pl-12' : 'pl-12 pr-12'} group-hover:border-blue-200 transition-colors`}
+                      className={`${inputClass} ${isRTL ? 'pr-12 pl-12' : 'pl-12 pr-12'} group-hover:border-primary-200 transition-colors`}
                       placeholder="••••••••"
                     />
-                    <div className={`absolute top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors ${isRTL ? 'right-4' : 'left-4'}`}>
+                    <div className={`absolute top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-primary transition-colors ${isRTL ? 'right-4' : 'left-4'}`}>
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                       </svg>
@@ -183,7 +178,7 @@ export default function LoginPage() {
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className={`absolute top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-600 transition-colors ${isRTL ? 'left-4' : 'right-4'}`}
+                      className={`absolute top-1/2 -translate-y-1/2 text-gray-400 hover:text-primary transition-colors ${isRTL ? 'left-4' : 'right-4'}`}
                     >
                       {showPassword ? (
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg>
@@ -197,7 +192,7 @@ export default function LoginPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full h-[3.5rem] flex items-center justify-center gap-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-black rounded-2xl transition-all active:scale-95 shadow-xl shadow-blue-600/20 hover:shadow-blue-600/30 uppercase tracking-widest text-sm"
+                  className="w-full h-[3.5rem] flex items-center justify-center gap-3 bg-primary hover:bg-primary-hover disabled:bg-primary-400 text-white font-black rounded-2xl transition-all active:scale-95 shadow-xl shadow-primary/20 hover:shadow-primary/30 uppercase tracking-widest text-sm"
                 >
                   {loading ? (
                     <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -211,7 +206,7 @@ export default function LoginPage() {
 
             <p className="text-center mt-10 text-gray-500 font-medium">
               {t.noAccount}{' '}
-              <Link href="/register" className="text-blue-600 hover:text-blue-700 font-black border-b-2 border-blue-600/20 hover:border-blue-600 transition-all">
+              <Link href="/register" className="text-primary hover:text-primary-hover font-black border-b-2 border-primary/20 hover:border-primary transition-all">
                 {t.createAccount}
               </Link>
             </p>

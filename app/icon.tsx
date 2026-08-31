@@ -1,6 +1,6 @@
 import { ImageResponse } from 'next/og'
 
-export const runtime = 'edge'
+export const runtime = 'nodejs'
 
 // Image metadata
 export const size = {
@@ -19,8 +19,8 @@ export default function Icon() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: 'linear-gradient(to bottom right, #3b82f6, #4338ca)',
-          borderRadius: '8px',
+          background: 'linear-gradient(135deg, #2563eb, #4f46e5, #7c3aed)',
+          borderRadius: '9px',
         }}
       >
         <svg
@@ -29,9 +29,15 @@ export default function Icon() {
           xmlns="http://www.w3.org/2000/svg"
           style={{ width: '80%', height: '80%' }}
         >
-          <path d="M16 8V24M8 16H24" stroke="white" strokeWidth="4" strokeLinecap="round" />
-          <circle cx="16" cy="16" r="10" stroke="white" strokeWidth="2" strokeOpacity="0.4" />
-          <circle cx="16" cy="16" r="4" fill="white" />
+          <path d="M16 9.5V22.5M9.5 16H22.5" stroke="white" strokeWidth="3.4" strokeLinecap="round" />
+          <path
+            d="M7 16h2.2l1.6-2.6 2.4 4.2 1.8-3 1.6 1.4h8.4"
+            stroke="white"
+            strokeWidth="1.7"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            opacity="0.85"
+          />
         </svg>
       </div>
     ),

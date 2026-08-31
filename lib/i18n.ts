@@ -4,14 +4,12 @@ import { useState, useEffect, startTransition } from 'react'
 
 const translations = {
   ar: {
-    // App
     appName: 'عيادتي',
     appTagline: 'نظام إدارة العيادات',
-    // Nav
     patients: 'المرضى',
     settings: 'الإعدادات',
+    analytics: 'الإحصائيات',
     logout: 'خروج',
-    // Landing
     heroTitle: 'أدر عيادتك باحترافية',
     heroSubtitle: 'نظام متكامل لإدارة المرضى والسجلات الطبية',
     getStarted: 'ابدأ مجاناً',
@@ -21,22 +19,20 @@ const translations = {
     feature2Desc: 'احتفظ بسجلات كاملة ومنظمة لجميع مرضاك',
     feature3Title: 'إدارة الطاقم',
     feature3Desc: 'أضف موظفين وتحكّم بصلاحياتهم بسهولة',
-    // Register
     registerTitle: 'إنشاء حساب',
     step1: 'بيانات الطبيب',
     step2: 'بيانات العيادة',
     step3: 'مراجعة',
-    // Login
     loginTitle: 'تسجيل الدخول',
     loginSubtitle: 'أدخل بيانات حسابك',
     username: 'اسم المستخدم',
     password: 'كلمة المرور',
+    confirmPassword: 'تأكيد كلمة المرور',
     loginBtn: 'دخول',
     noAccount: 'ليس لديك حساب؟',
     createAccount: 'إنشاء حساب',
     alreadyHaveAccount: 'لديك حساب؟',
     loginLink: 'تسجيل الدخول',
-    // Dashboard
     welcome: 'مرحباً',
     addPatient: 'إضافة مريض',
     searchPlaceholder: 'بحث بالاسم أو الهاتف...',
@@ -48,12 +44,16 @@ const translations = {
     dateFrom: 'من',
     dateTo: 'إلى',
     clearFilter: 'مسح',
-    // Patient Table
     fullName: 'الاسم',
     phone: 'الهاتف',
     gender: 'الجنس',
     bloodType: 'فصيلة الدم',
     medicalStudies: 'الفحوصات',
+    price: 'السعر',
+    priceToday: 'إجمالي اليوم',
+    priceThisWeek: 'إجمالي هذا الأسبوع',
+    priceThisMonth: 'إجمالي هذا الشهر',
+    totalPrice: 'الإجمالي الكلي',
     createdAt: 'تاريخ التسجيل',
     actions: 'إجراءات',
     edit: 'تعديل',
@@ -61,7 +61,6 @@ const translations = {
     noPatients: 'لا يوجد مرضى مسجلون',
     male: 'ذكر',
     female: 'أنثى',
-    // Patient Form
     email: 'البريد الإلكتروني',
     dateOfBirth: 'تاريخ الميلاد',
     address: 'العنوان',
@@ -73,7 +72,6 @@ const translations = {
     save: 'حفظ',
     cancel: 'إلغاء',
     saving: 'جاري الحفظ...',
-    // Settings
     clinicInfo: 'معلومات العيادة',
     clinicName: 'اسم العيادة',
     specialty: 'التخصص',
@@ -89,9 +87,7 @@ const translations = {
     secretaryPassword: 'كلمة المرور',
     active: 'نشط',
     inactive: 'معطل',
-    // Register
     doctorName: 'اسم الطبيب',
-    doctorEmail: 'البريد الإلكتروني',
     doctorPhone: 'الهاتف',
     doctorUsername: 'اسم المستخدم',
     doctorPassword: 'كلمة المرور',
@@ -107,24 +103,43 @@ const translations = {
     reviewAndSubmit: 'مراجعة وإرسال',
     doctorInfo: 'بيانات الطبيب',
     clinicInfoLabel: 'بيانات العيادة',
-    // Stats
     totalPatients: 'المرضى',
-    // Errors
     errorRequired: 'هذا الحقل مطلوب',
     errorUserExists: 'اسم المستخدم أو البريد مستخدم',
     errorWrongCredentials: 'بيانات الدخول غير صحيحة',
     errorGeneric: 'حدث خطأ، حاول مرة أخرى',
+    errorPasswordMin: '6 أحرف على الأقل',
+    errorPasswordMatch: 'كلمتا المرور غير متطابقتين',
     loading: 'جاري التحميل...',
     registrationSuccess: 'تم إنشاء الحساب! يمكنك الآن تسجيل الدخول.',
     statSecure: 'آمن ومشفّر',
     statLanguages: 'لغات مدعومة',
     statPatients: 'سجلات مرضى',
+    // Analytics
+    analyticsTitle: 'الإحصائيات',
+    daily: 'يومي',
+    weekly: 'أسبوعي',
+    monthly: 'شهري',
+    totalRegistries: 'إجمالي التسجيلات',
+    newThisPeriod: 'جدد هذه الفترة',
+    newToday: 'جدد اليوم',
+    avgPerDay: 'المتوسط اليومي',
+    malePatients: 'الذكور',
+    femalePatients: 'الإناث',
+    registriesByDay: 'التسجيلات حسب اليوم',
+    registriesByWeek: 'التسجيلات حسب الأسبوع',
+    registriesByMonth: 'التسجيلات حسب الشهر',
+    patientsByGender: 'المرضى حسب الجنس',
+    recentActivity: 'النشاط الأخير',
+    noData: 'لا توجد بيانات',
+    accessRestricted: 'الوصول محدود',
   },
   fr: {
     appName: 'MaClinic',
     appTagline: 'Gestion de Clinique',
     patients: 'Patients',
     settings: 'Paramètres',
+    analytics: 'Statistiques',
     logout: 'Déconnexion',
     heroTitle: 'Gérez votre clinique professionnellement',
     heroSubtitle: 'Système complet pour patients et dossiers médicaux',
@@ -143,6 +158,7 @@ const translations = {
     loginSubtitle: 'Entrez vos identifiants',
     username: "Nom d'utilisateur",
     password: 'Mot de passe',
+    confirmPassword: 'Confirmer le mot de passe',
     loginBtn: 'Se connecter',
     noAccount: 'Pas de compte ?',
     createAccount: 'Créer un compte',
@@ -164,6 +180,12 @@ const translations = {
     gender: 'Sexe',
     bloodType: 'Groupe sanguin',
     medicalStudies: 'Examens',
+    price: 'Prix',
+    priceToday: "Total d'aujourd'hui",
+    priceThisWeek: 'Total cette semaine',
+    priceThisMonth: 'Total ce mois',
+    totalPrice: 'Total général',
+    newToday: "Nouvelles d'aujourd'hui",
     createdAt: "Date d'inscription",
     actions: 'Actions',
     edit: 'Modifier',
@@ -198,7 +220,6 @@ const translations = {
     active: 'Actif',
     inactive: 'Inactif',
     doctorName: 'Nom du médecin',
-    doctorEmail: 'Email',
     doctorPhone: 'Téléphone',
     doctorUsername: "Nom d'utilisateur",
     doctorPassword: 'Mot de passe',
@@ -219,17 +240,36 @@ const translations = {
     errorUserExists: 'Identifiant ou email déjà utilisé',
     errorWrongCredentials: 'Identifiants incorrects',
     errorGeneric: 'Une erreur est survenue',
+    errorPasswordMin: '6 caractères minimum',
+    errorPasswordMatch: 'Les mots de passe ne correspondent pas',
     loading: 'Chargement...',
     registrationSuccess: 'Compte créé ! Vous pouvez maintenant vous connecter.',
     statSecure: 'Sécurisé',
     statLanguages: 'Langues',
     statPatients: 'Dossiers patients',
+    analyticsTitle: 'Statistiques',
+    daily: 'Journalier',
+    weekly: 'Hebdomadaire',
+    monthly: 'Mensuel',
+    totalRegistries: 'Total enregistrements',
+    newThisPeriod: 'Nouvelles cette période',
+    avgPerDay: 'Moyenne par jour',
+    malePatients: 'Hommes',
+    femalePatients: 'Femmes',
+    registriesByDay: 'Enregistrements par jour',
+    registriesByWeek: 'Enregistrements par semaine',
+    registriesByMonth: 'Enregistrements par mois',
+    patientsByGender: 'Patients par sexe',
+    recentActivity: 'Activité récente',
+    noData: 'Aucune donnée',
+    accessRestricted: 'Accès restreint',
   },
   en: {
     appName: 'MyClinic',
     appTagline: 'Clinic Management',
     patients: 'Patients',
     settings: 'Settings',
+    analytics: 'Analytics',
     logout: 'Logout',
     heroTitle: 'Manage your clinic professionally',
     heroSubtitle: 'Complete system for patients and medical records',
@@ -248,6 +288,7 @@ const translations = {
     loginSubtitle: 'Enter your credentials',
     username: 'Username',
     password: 'Password',
+    confirmPassword: 'Confirm Password',
     loginBtn: 'Sign In',
     noAccount: "Don't have an account?",
     createAccount: 'Create Account',
@@ -269,6 +310,12 @@ const translations = {
     gender: 'Gender',
     bloodType: 'Blood Type',
     medicalStudies: 'Exams',
+    price: 'Price',
+    priceToday: "Today's total",
+    priceThisWeek: 'This week total',
+    priceThisMonth: 'This month total',
+    totalPrice: 'Total revenue',
+    newToday: 'New Today',
     createdAt: 'Registered',
     actions: 'Actions',
     edit: 'Edit',
@@ -303,7 +350,6 @@ const translations = {
     active: 'Active',
     inactive: 'Inactive',
     doctorName: 'Doctor Full Name',
-    doctorEmail: 'Email',
     doctorPhone: 'Phone',
     doctorUsername: 'Username',
     doctorPassword: 'Password',
@@ -324,11 +370,29 @@ const translations = {
     errorUserExists: 'Username or email already in use',
     errorWrongCredentials: 'Incorrect credentials',
     errorGeneric: 'An error occurred, please try again',
+    errorPasswordMin: 'Minimum 6 characters',
+    errorPasswordMatch: 'Passwords do not match',
     loading: 'Loading...',
     registrationSuccess: 'Account created! You can now sign in.',
     statSecure: 'Secure & Encrypted',
     statLanguages: 'Languages',
     statPatients: 'Patient Records',
+    analyticsTitle: 'Analytics',
+    daily: 'Daily',
+    weekly: 'Weekly',
+    monthly: 'Monthly',
+    totalRegistries: 'Total Registries',
+    newThisPeriod: 'New This Period',
+    avgPerDay: 'Daily Average',
+    malePatients: 'Male',
+    femalePatients: 'Female',
+    registriesByDay: 'Registries by Day',
+    registriesByWeek: 'Registries by Week',
+    registriesByMonth: 'Registries by Month',
+    patientsByGender: 'Patients by Gender',
+    recentActivity: 'Recent Activity',
+    noData: 'No data available',
+    accessRestricted: 'Access restricted',
   },
 } as const
 
@@ -336,20 +400,14 @@ export type Lang = keyof typeof translations
 export type Translations = typeof translations.en
 
 export function useT() {
-  // Always start with 'ar' — this matches the server render (lang="ar" dir="rtl" in layout).
-  // Reading localStorage here would cause a hydration mismatch because SSR never has localStorage.
   const [lang, setLangState] = useState<Lang>('ar')
 
-  // After hydration is complete, sync to the user's stored preference.
-  // startTransition wraps the setState so it is NOT a synchronous effect setState call,
-  // which satisfies the react-hooks/set-state-in-effect lint rule.
   useEffect(() => {
     const stored = localStorage.getItem('lang') as Lang | null
     const resolved = stored && stored in translations ? stored : 'ar'
     if (resolved !== 'ar') startTransition(() => setLangState(resolved as Lang))
   }, [])
 
-  // Listen for language change events dispatched by LanguageSwitcher
   useEffect(() => {
     const handler = () => {
       const stored = localStorage.getItem('lang') as Lang | null
@@ -360,6 +418,12 @@ export function useT() {
     window.addEventListener('lang-changed', handler)
     return () => window.removeEventListener('lang-changed', handler)
   }, [])
+
+  useEffect(() => {
+    const root = document.documentElement
+    root.dir = lang === 'ar' ? 'rtl' : 'ltr'
+    root.lang = lang
+  }, [lang])
 
   return {
     t: translations[lang] as Translations,

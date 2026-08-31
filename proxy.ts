@@ -1,11 +1,10 @@
 // Next.js 16 — "proxy.ts" replaces the deprecated "middleware.ts".
 // The exported function must be named "proxy" (not "middleware").
-// This runs on every matched request before rendering.
 import { type NextRequest } from 'next/server'
-import { updateSession } from '@/utils/supabase/middleware'
+import { createClient } from '@/utils/supabase/middleware'
 
 export async function proxy(request: NextRequest) {
-  return await updateSession(request)
+  return createClient(request)
 }
 
 export const config = {
