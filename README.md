@@ -1,6 +1,8 @@
-# MyClinic — Modern Clinic Management System
+# MyClinic — Clinic Management System
 
 <div align="center">
+
+A professional clinic management system built with Next.js 16, Supabase, Tailwind CSS 4, and TypeScript.
 
 **[English](#english) | [العربية](#العربية) | [Français](#français)**
 
@@ -10,11 +12,11 @@
 
 # English
 
-## What is MyClinic?
+## Overview
 
-A professional, full-stack clinic management system built with modern web technologies. Manage patients, track pricing, view analytics, and handle your clinic's daily operations — all in a clean, bilingual (Arabic RTL + English + French) interface.
+MyClinic is a full-stack web application for managing medical clinics. It handles patient records, revenue tracking, analytics, and staff management — with full Arabic (RTL) support alongside French and English.
 
-### Built With
+### Tech Stack
 
 | Technology | Version |
 |------------|---------|
@@ -28,29 +30,82 @@ A professional, full-stack clinic management system built with modern web techno
 
 ## Screenshots
 
-### Landing Page
-![Landing Page](screenshots/01-landing.png)
+### Arabic
 
-### Registration
-![Registration](screenshots/02-register.png)
+| Landing | Dashboard | Analytics |
+|---------|-----------|-----------|
+| ![Landing AR](screenshots/01-landing-ar.png) | ![Dashboard AR](screenshots/02-dashboard-ar.png) | ![Analytics AR](screenshots/03-analytics-ar.png) |
 
-### Login
-![Login](screenshots/03-login.png)
+### Français
 
-### Dashboard — Patients Tab
-![Dashboard Patients](screenshots/04-dashboard-patients.png)
+| Accueil | Tableau de bord |
+|---------|-----------------|
+| ![Accueil FR](screenshots/04-landing-fr.png) | ![Tableau de bord FR](screenshots/06-dashboard-fr.png) |
 
-### Dashboard — Analytics Tab
-![Dashboard Analytics](screenshots/05-dashboard-analytics.png)
+### English
 
-### Dashboard — Settings Tab
-![Dashboard Settings](screenshots/06-dashboard-settings.png)
+| Landing | Login | Dashboard |
+|---------|-------|-----------|
+| ![Landing EN](screenshots/07-landing-en.png) | ![Login EN](screenshots/08-login-en.png) | ![Dashboard EN](screenshots/09-dashboard-en.png) |
+
+| Analytics | Settings |
+|-----------|----------|
+| ![Analytics EN](screenshots/10-analytics-en.png) | ![Settings EN](screenshots/11-settings-en.png) |
+
+---
+
+## Quick Start
+
+```bash
+git clone https://github.com/oguenfoude/myclinic.git
+cd myclinic
+npm install
+
+# Create .env.local
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=eyJxxx...
+
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000)
+
+---
+
+## Features
+
+- **Patient Management** — Add, edit, search, soft-delete patients with name, phone, gender, exams, and pricing
+- **Revenue Tracking** — Today, this week, this month, and all-time revenue totals on the dashboard
+- **Analytics** — Gender split, recent activity, total patients — clean and simple
+- **Settings** — Manage clinic info, add/deactivate secretaries (doctor only)
+- **Multilingual** — Arabic (RTL), French, English — live switching
+- **Responsive** — Desktop sidebar, mobile bottom nav, adaptive layouts
+- **Secure Auth** — Bcrypt-hashed passwords, role-based access, server-side validation
+
+---
+
+## User Roles
+
+| Role | Access |
+|------|--------|
+| **Doctor** | Patients, analytics, settings, manage secretaries |
+| **Secretary** | Patients and analytics only |
+
+---
+
+## Patient Data Model
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `full_name` | TEXT | Yes | Patient's full name |
+| `phone` | TEXT | Yes | Contact phone number |
+| `gender` | TEXT | | male / female |
+| `medical_studies` | TEXT | | Free-text medical exams/studies |
+| `price` | NUMERIC | | Consultation/treatment price (DA) |
 
 ---
 
 ## Demo Data
-
-The system comes pre-seeded with real demo data for testing:
 
 | Metric | Value |
 |--------|-------|
@@ -68,72 +123,18 @@ The system comes pre-seeded with real demo data for testing:
 | `doctor2` | `doc2123` | Doctor |
 | `secretary` | `sec123` | Secretary |
 
-### Sample Patient Data
-
-| Name | Phone | Gender | Medical Studies | Price (DA) | Registered |
-|------|-------|--------|-----------------|------------|------------|
-| هاجر قادري | 051002055 | Female | تخطيط القلب | 1,000 | 2026-08-30 |
-| أمينة شريف | 051000685 | Female | — | 4,000 | 2026-08-29 |
-| أمل زروقي | 051003151 | Female | — | 6,500 | 2026-08-28 |
-| نادية بومدين | 051002877 | Female | تخطيط القلب | 2,500 | 2026-08-27 |
-| بلقاسم بوعلام | 051005480 | Male | فحص ضغط الدم | 7,500 | 2026-08-26 |
-| وائل لحمر | 051002466 | Male | تحاليل الدم | 4,000 | 2026-08-25 |
-
 ---
 
-## Quick Start
+## Database
 
-```bash
-# Clone and install
-git clone https://github.com/oguenfoude/myclinic.git
-cd myclinic
-npm install
+4 tables in Supabase with Row Level Security:
 
-# Create .env.local with Supabase credentials
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=eyJxxx...
+- **clinics** — Clinic info (name, specialty, city, contact)
+- **users** — Doctors and secretaries (bcrypt passwords, role-based)
+- **patients** — Patient records (name, phone, gender, exams, price)
+- **appointments** — Scheduled/completed/cancelled/no-show
 
-# Run development server
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000)
-
----
-
-## Features
-
-| Feature | Description |
-|---------|-------------|
-| **Patient Management** | Add, edit, search, soft-delete patients with name, phone, gender, exams, and pricing |
-| **Revenue Tracking** | Track patient pricing — view today's total, this week, this month, and all-time revenue |
-| **Dashboard Analytics** | Gender split, recent activity, total patients — clean and simple |
-| **Settings** | Manage clinic info, add/deactivate secretaries (doctor only) |
-| **Multilingual** | Arabic (RTL), French, English — live switching with full translation |
-| **RTL Layout** | Proper bidirectional layout support — Arabic reads right-to-left naturally |
-| **Modern Auth UI** | Split-screen login/register with glassmorphism design |
-| **Responsive** | Works on desktop, tablet, and mobile with adaptive sidebar/bottom nav |
-
----
-
-## User Roles
-
-| Role | Access |
-|------|--------|
-| **Doctor** | Full access: patients, analytics, settings, manage secretaries |
-| **Secretary** | Patients only: add, edit, search, deactivate |
-
----
-
-## Patient Data Model
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| full_name | TEXT | Yes | Patient's full name |
-| phone | TEXT | Yes | Contact phone number |
-| gender | TEXT | | male / female |
-| medical_studies | TEXT | | Free-text medical exams/studies |
-| price | NUMERIC | | Consultation/treatment price (DA) |
+See [DATABASE.md](./DATABASE.md) for complete schema.
 
 ---
 
@@ -141,83 +142,44 @@ Open [http://localhost:3000](http://localhost:3000)
 
 ```
 myclinic/
-├── app/                        # Next.js App Router pages
-│   ├── layout.tsx             # Root layout (RTL, metadata)
-│   ├── page.tsx               # Landing page (marketing)
-│   ├── login/page.tsx         # Login — split-screen design
-│   ├── register/page.tsx      # Registration (2 fields)
-│   └── dashboard/page.tsx     # Main app (patients + analytics + settings)
-├── components/                 # Reusable React components
-│   ├── Sidebar.tsx            # Navigation sidebar + mobile bottom nav
-│   ├── PatientDialog.tsx      # Patient add/edit modal form
-│   ├── LanguageSwitcher.tsx   # AR/FR/EN language toggle
-│   ├── LoadingScreen.tsx      # Branded loading screen
-│   └── Logo.tsx               # SVG logo component
-├── lib/                       # Client utilities
-│   ├── supabase.ts            # Supabase browser client
-│   └── i18n.ts                # Translations (AR/FR/EN)
-├── types/                     # TypeScript interfaces
-│   └── index.ts               # Clinic, User, Patient, AuthUser
-├── utils/                     # Server utilities
-│   └── supabase/
-│       ├── client.ts          # Browser client factory
-│       ├── server.ts          # Server client factory
-│       └── middleware.ts      # Session management
-├── proxy.ts                   # Next.js 16 proxy (replaces middleware.ts)
-├── DATABASE.md                # Complete database schema
-├── AGENTS.md                  # Developer guidelines
-├── tailwind.config.ts         # Tailwind theme tokens
-└── package.json
+├── app/
+│   ├── layout.tsx          # Root layout (RTL, metadata)
+│   ├── page.tsx            # Landing page
+│   ├── login/page.tsx      # Login
+│   ├── register/page.tsx   # Registration
+│   └── dashboard/page.tsx  # Main app (patients + analytics + settings)
+├── components/
+│   ├── Sidebar.tsx         # Navigation
+│   ├── PatientDialog.tsx   # Patient add/edit
+│   ├── LanguageSwitcher.tsx # AR/FR/EN toggle
+│   ├── LoadingScreen.tsx   # Loading state
+│   └── Logo.tsx            # Medical cross icon
+├── lib/
+│   ├── supabase.ts         # Browser client
+│   └── i18n.ts             # Translations
+├── types/index.ts          # TypeScript interfaces
+├── proxy.ts                # Next.js 16 proxy
+├── DATABASE.md             # Schema docs
+└── AGENTS.md               # Dev guidelines
 ```
 
 ---
 
-## Available Commands
+## Commands
 
 | Command | Description |
 |---------|-------------|
-| `npm run dev` | Start development server (Turbopack) |
-| `npm run build` | Build for production |
-| `npm run start` | Run production build |
-
----
-
-## Database
-
-The app uses 4 tables in Supabase:
-- **clinics** — Clinic information (name, specialty, city, contact)
-- **users** — Doctors and secretaries (role-based access, bcrypt passwords)
-- **patients** — Patient records (name, phone, gender, exams, price)
-- **appointments** — Scheduled/completed/cancelled appointments
-
-See [DATABASE.md](./DATABASE.md) for complete schema and SQL.
-
----
-
-## Authentication Flow
-
-1. **Registration**: Doctor creates account → clinic + user inserted with bcrypt-hashed password → auto-login to dashboard.
-2. **Login**: Username + password verified server-side via `app_login` RPC → session stored in `localStorage`.
-3. **Session**: `AuthUser { id, clinic_id, full_name, role }` determines access level.
-4. **Roles**: Doctor sees Patients + Analytics + Settings; Secretary sees Patients + Analytics only.
-
----
-
-## Documentation
-
-| File | Purpose |
-|------|---------|
-| `README.md` | This file — project overview |
-| `DATABASE.md` | Database schema, SQL, TypeScript types |
-| `AGENTS.md` | Developer guidelines and conventions |
+| `npm run dev` | Development server (Turbopack) |
+| `npm run build` | Production build |
+| `npm run start` | Run production server |
 
 ---
 
 # العربية
 
-## ما هو MyClinic؟
+## نظرة عامة
 
-نظام إدارة عيادات متكامل واحترافي مبني بأحدث تقنيات الويب. إدارة المرضى، تتبع الأسعار، عرض الإحصائيات، وإدارة العمليات اليومية لعيادتك — بكل واجهة ثنائية اللغة (العربية + الفرنسية + الإنجليزية).
+MyClinic نظام إدارة عيادات متكامل مبني بأحدث التقنيات. إدارة المرضى، تتبع الإيرادات، الإحصائيات، وإدارة الموظفين — مع دعم كامل للعربية (RTL) إلى جانب الفرنسية والإنجليزية.
 
 ### التقنيات
 
@@ -233,23 +195,74 @@ See [DATABASE.md](./DATABASE.md) for complete schema and SQL.
 
 ## لقطات الشاشة
 
-### الصفحة الرئيسية
-![الصفحة الرئيسية](screenshots/01-landing.png)
+### العربية
 
-### التسجيل
-![التسجيل](screenshots/02-register.png)
+| الصفحة الرئيسية | لوحة التحكم | الإحصائيات |
+|-----------------|-------------|------------|
+| ![الرئيسية](screenshots/01-landing-ar.png) | ![التحكم](screenshots/02-dashboard-ar.png) | ![الإحصائيات](screenshots/03-analytics-ar.png) |
 
-### تسجيل الدخول
-![تسجيل الدخول](screenshots/03-login.png)
+### Français
 
-### لوحة التحكم — تبويب المرضى
-![لوحة التحكم - المرضى](screenshots/04-dashboard-patients.png)
+| Accueil | Tableau de bord |
+|---------|-----------------|
+| ![Accueil FR](screenshots/04-landing-fr.png) | ![Tableau de bord FR](screenshots/06-dashboard-fr.png) |
 
-### لوحة التحكم — تبويب الإحصائيات
-![لوحة التحكم - الإحصائيات](screenshots/05-dashboard-analytics.png)
+### English
 
-### لوحة التحكم — تبويب الإعدادات
-![لوحة التحكم - الإعدادات](screenshots/06-dashboard-settings.png)
+| Landing | Login | Dashboard |
+|---------|-------|-----------|
+| ![Landing EN](screenshots/07-landing-en.png) | ![Login EN](screenshots/08-login-en.png) | ![Dashboard EN](screenshots/09-dashboard-en.png) |
+
+| Analytics | Settings |
+|-----------|----------|
+| ![Analytics EN](screenshots/10-analytics-en.png) | ![Settings EN](screenshots/11-settings-en.png) |
+
+---
+
+## البدء السريع
+
+```bash
+git clone https://github.com/oguenfoude/myclinic.git
+cd myclinic
+npm install
+# أنشئ .env.local بمعلومات Supabase
+npm run dev
+```
+
+افتح [http://localhost:3000](http://localhost:3000)
+
+---
+
+## المميزات
+
+- إدارة المرضى (إضافة، تعديل، بحث، تعطيل) مع الأسعار
+- تتبع الإيرادات (اليوم، هذا الأسبوع، هذا الشهر، الإجمالي)
+- إحصائيات لوحة التحكم (الجنس، النشاط الأخير، إجمالي المرضى)
+- إعدادات العيادة وإدارة الموظفين
+- متعدد اللغات (العربية، الفرنسية، الإنجليزية)
+- واجهة متجاوبة (شريط جانبي لل电脑، شريط سفلي للجوال)
+- مصادقة آمنة (كلمات مرور مشفرة، أدوار محددة)
+
+---
+
+## الأدوار
+
+| الدور | الصلاحيات |
+|-------|-----------|
+| **طبيب** | كامل: المرضى، الإحصائيات، الإعدادات، إدارة الموظفين |
+| **سكرتير** | المرضى + الإحصائيات فقط |
+
+---
+
+## نموذج بيانات المريض
+
+| الحقل | النوع | مطلوب | الوصف |
+|-------|-------|-------|-------|
+| `full_name` | TEXT | نعم | اسم المريض الكامل |
+| `phone` | TEXT | نعم | رقم الهاتف |
+| `gender` | TEXT | | ذكر / أنثى |
+| `medical_studies` | TEXT | | الفحوصات الطبية |
+| `price` | NUMERIC | | سعر الاستشارة / العلاج (دج) |
 
 ---
 
@@ -273,57 +286,11 @@ See [DATABASE.md](./DATABASE.md) for complete schema and SQL.
 
 ---
 
-## البدء السريع
-
-```bash
-git clone https://github.com/oguenfoude/myclinic.git
-cd myclinic
-npm install
-# أنشئ .env.local بمعلومات Supabase
-npm run dev
-```
-
-افتح [http://localhost:3000](http://localhost:3000)
-
----
-
-## المميزات
-
-1. إدارة المرضى (إضافة، تعديل، بحث، تعطيل) مع الأسعار
-2. تتبع الإيرادات (اليوم، هذا الأسبوع، هذا الشهر، الإجمالي)
-3. إحصائيات لوحة التحكم (الجنس، النشاط الأخير، إجمالي المرضى)
-4. إعدادات العيادة وإدارة الموظفين
-5. متعدد اللغات (العربية، الفرنسية، الإنجليزية)
-6. دعم RTL كامل — الواجهة العربية تقرأ من اليمين لليسار
-
----
-
-## الأدوار
-
-| الدور | الصلاحيات |
-|-------|-----------|
-| **طبيب** | كامل: المرضى، الإحصائيات، الإعدادات، إدارة الموظفين |
-| **سكرتير** | المرضى + الإحصائيات فقط |
-
----
-
-## نموذج بيانات المريض
-
-| الحقل | النوع | مطلوب | الوصف |
-|-------|-------|-------|-------|
-| full_name | TEXT | نعم | اسم المريض الكامل |
-| phone | TEXT | نعم | رقم الهاتف |
-| gender | TEXT | | ذكر / أنثى |
-| medical_studies | TEXT | | الفحوصات الطبية |
-| price | NUMERIC | | سعر الاستشارة / العلاج (دج) |
-
----
-
 # Français
 
-## Qu'est-ce que MyClinic?
+## Présentation
 
-Système de gestion de clinique professionnel et complet construit avec les technologies web modernes. Gérez les patients, suivez les tarifs, consultez les statistiques et gérez les opérations quotidiennes de votre clinique — tout cela dans une interface bilingue (arabe RTL + anglais + français).
+MyClinic est une application web complète de gestion de cliniques. Gestion des patients, suivi des revenus, statistiques et gestion du personnel — avec support complet de l'arabe (RTL) aux côtés du français et de l'anglais.
 
 ### Technologies
 
@@ -339,23 +306,74 @@ Système de gestion de clinique professionnel et complet construit avec les tech
 
 ## Captures d'écran
 
-### Page d'accueil
-![Page d'accueil](screenshots/01-landing.png)
+### Français
 
-### Inscription
-![Inscription](screenshots/02-register.png)
+| Accueil | Connexion | Tableau de bord |
+|---------|-----------|-----------------|
+| ![Accueil FR](screenshots/04-landing-fr.png) | ![Connexion FR](screenshots/05-login-fr.png) | ![Tableau de bord FR](screenshots/06-dashboard-fr.png) |
 
-### Connexion
-![Connexion](screenshots/03-login.png)
+### العربية
 
-### Tableau de bord — Onglet Patients
-![Tableau de bord - Patients](screenshots/04-dashboard-patients.png)
+| الصفحة الرئيسية | لوحة التحكم | الإحصائيات |
+|-----------------|-------------|------------|
+| ![الرئيسية](screenshots/01-landing-ar.png) | ![التحكم](screenshots/02-dashboard-ar.png) | ![الإحصائيات](screenshots/03-analytics-ar.png) |
 
-### Tableau de bord — Onglet Statistiques
-![Tableau de bord - Statistiques](screenshots/05-dashboard-analytics.png)
+### English
 
-### Tableau de bord — Onglet Paramètres
-![Tableau de bord - Paramètres](screenshots/06-dashboard-settings.png)
+| Landing | Login | Dashboard |
+|---------|-------|-----------|
+| ![Landing EN](screenshots/07-landing-en.png) | ![Login EN](screenshots/08-login-en.png) | ![Dashboard EN](screenshots/09-dashboard-en.png) |
+
+| Analytics | Settings |
+|-----------|----------|
+| ![Analytics EN](screenshots/10-analytics-en.png) | ![Settings EN](screenshots/11-settings-en.png) |
+
+---
+
+## Démarrage Rapide
+
+```bash
+git clone https://github.com/oguenfoude/myclinic.git
+cd myclinic
+npm install
+# Créer .env.local avec les identifiants Supabase
+npm run dev
+```
+
+Ouvrez [http://localhost:3000](http://localhost:3000)
+
+---
+
+## Fonctionnalités
+
+- Gestion des patients (ajouter, modifier, rechercher, désactiver) avec tarifs
+- Suivi des revenus (aujourd'hui, cette semaine, ce mois-ci, total)
+- Statistiques du tableau de bord (sexe, activité récente, total patients)
+- Paramètres de la clinique et gestion du personnel
+- Multilingue (arabe, français, anglais)
+- Interface responsive (sidebar desktop, navigation mobile)
+- Authentification sécurisée (mots de passe bcrypt, rôles)
+
+---
+
+## Rôles
+
+| Rôle | Accès |
+|------|-------|
+| **Médecin** | Complet : patients, statistiques, paramètres, gestion personnel |
+| **Secrétaire** | Patients et statistiques uniquement |
+
+---
+
+## Modèle de Données Patient
+
+| Champ | Type | Obligatoire | Description |
+|-------|------|-------------|-------------|
+| `full_name` | TEXT | Oui | Nom complet du patient |
+| `phone` | TEXT | Oui | Numéro de téléphone |
+| `gender` | TEXT | | Homme / Femme |
+| `medical_studies` | TEXT | | Examens médicaux (texte libre) |
+| `price` | NUMERIC | | Tarif de consultation / traitement (DA) |
 
 ---
 
@@ -376,49 +394,3 @@ Système de gestion de clinique professionnel et complet construit avec les tech
 | `doctor` | `doc123` | Médecin |
 | `doctor2` | `doc2123` | Médecin |
 | `secretary` | `sec123` | Secrétaire |
-
----
-
-## Démarrage Rapide
-
-```bash
-git clone https://github.com/oguenfoude/myclinic.git
-cd myclinic
-npm install
-# Créer .env.local avec les identifiants Supabase
-npm run dev
-```
-
-Ouvrez [http://localhost:3000](http://localhost:3000)
-
----
-
-## Fonctionnalités
-
-1. Gestion des patients (ajouter, modifier, rechercher, désactiver) avec tarifs
-2. Suivi des revenus (aujourd'hui, cette semaine, ce mois-ci, total)
-3. Statistiques du tableau de bord (sexe, activité récente, total patients)
-4. Paramètres de la clinique et gestion du personnel
-5. Multilingue (arabe, français, anglais)
-6. Support RTL complet — l'interface arabe se lit de droite à gauche
-
----
-
-## Rôles
-
-| Rôle | Accès |
-|------|-------|
-| **Médecin** | Complet : patients, statistiques, paramètres, gestion personnel |
-| **Secrétaire** | Patients + statistiques uniquement |
-
----
-
-## Modèle de Données Patient
-
-| Champ | Type | Obligatoire | Description |
-|-------|------|-------------|-------------|
-| full_name | TEXT | Oui | Nom complet du patient |
-| phone | TEXT | Oui | Numéro de téléphone |
-| gender | TEXT | | Homme / Femme |
-| medical_studies | TEXT | | Examens médicaux (texte libre) |
-| price | NUMERIC | | Tarif de consultation / traitement (DA) |
