@@ -30,6 +30,12 @@ MyClinic is a full-stack web application for managing medical clinics. It handle
 
 ## Screenshots
 
+### Live Screenshot
+
+| Homepage |
+|----------|
+| ![Homepage](screenshot-home.png) |
+
 ### Arabic
 
 | Landing | Dashboard | Analytics |
